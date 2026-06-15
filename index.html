@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0f0f1a">
+  <title>SQL Skill Trainer</title>
+  <link rel="manifest" href="./manifest.json">
+  <script src="https://cdn.jsdelivr.net/npm/alasql@4.2.3/dist/alasql.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f0f1a;
+      --surface: #1a1a2e;
+      --surface2: #16213e;
+      --accent: #00d4ff;
+      --accent2: #7c3aed;
+      --success: #22c55e;
+      --error: #ef4444;
+      --warning: #f59e0b;
+      --text: #e2e8f0;
+      --text-dim: #94a3b8;
+      --border: #2d3748;
+      --code-bg: #0d1117;
+      --code-text: #7ee787;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      max-width: 640px;
+      margin: 0 auto;
+      position: relative;
+    }
+
+    /* Header */
+    #header {
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 640px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 100;
+    }
+    #header .app-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--accent);
+      letter-spacing: 0.5px;
+    }
+    #header .badges {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+    .badge {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-dim);
+    }
+    .badge.level { color: var(--accent2); border-color: var(--accent2); }
+    .badge.streak { color: var(--warning); border-color: var(--warning); }
+
+    /* Main content */
+    #main {
+      margin-top: 57px;
+      margin-bottom: 65px;
+      overflow-y: auto;
+      flex: 1;
+      padding: 16px;
+    }
+
+    /* Bottom nav */
+    #bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 640px;
+      background: var(--surface);
+      border-top: 1px solid var(--border);
+      display: flex;
+      z-index: 100;
+    }
+    .nav-btn {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      padding: 10px 4px;
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 11px;
+      cursor: pointer;
+      min-height: 56px;
+      transition: color 0.15s;
+    }
+    .nav-btn svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    .nav-btn.active { color: var(--accent); }
+
+    /* Tabs */
+    .tab { display: none; }
+    .tab.active { display: block; }
+
+    /* Cards */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .card-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+    .pill {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 3px 10px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .pill.concept { color: var(--accent); border-color: var(--accent); }
+    .pill.pass { color: var(--success); border-color: var(--success); }
+    .pill.locked { color: var(--text-dim); }
+
+    /* Session meta */
+    .session-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+    .session-meta strong { color: var(--text); }
+
+    /* Collapsible */
+    .collapsible-btn {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      min-height: 48px;
+    }
+    .collapsible-btn .icon { margin-right: 6px; }
+    .collapsible-btn .chevron { transition: transform 0.2s; font-size: 12px; color: var(--text-dim); }
+    .collapsible-btn.open .chevron { transform: rotate(180deg); }
+    .collapsible-content {
+      display: none;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 8px;
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+    .collapsible-content.open { display: block; }
+
+    /* Question card */
+    .q-card {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .q-card.locked { opacity: 0.5; pointer-events: none; }
+    .q-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .q-label {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--text-dim);
+    }
+    .q-prompt {
+      font-size: 14px;
+      color: var(--text);
+      margin-bottom: 12px;
+      line-height: 1.6;
+    }
+    textarea {
+      width: 100%;
+      min-height: 110px;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--code-text);
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+      font-size: 13px;
+      padding: 12px;
+      resize: vertical;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    textarea:focus { border-color: var(--accent); }
+    textarea.error { border-color: var(--error); }
+    textarea.success { border-color: var(--success); }
+
+    .run-btn {
+      width: 100%;
+      margin-top: 10px;
+      padding: 14px;
+      min-height: 48px;
+      background: var(--accent2);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .run-btn:hover { opacity: 0.88; }
+    .run-btn:disabled { opacity: 0.4; cursor: default; }
+
+    /* Feedback */
+    .feedback {
+      margin-top: 10px;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 13px;
+      display: none;
+    }
+    .feedback.show { display: block; }
+    .feedback.pass { background: rgba(34,197,94,0.1); border: 1px solid var(--success); color: var(--success); }
+    .feedback.fail { background: rgba(239,68,68,0.1); border: 1px solid var(--error); color: var(--error); }
+    .feedback .hint { color: var(--text-dim); margin-top: 6px; }
+
+    /* Result preview table */
+    .result-preview {
+      margin-top: 10px;
+      overflow-x: auto;
+      display: none;
+    }
+    .result-preview.show { display: block; }
+    .result-preview table {
+      border-collapse: collapse;
+      font-size: 12px;
+      width: 100%;
+    }
+    .result-preview th {
+      background: var(--surface);
+      color: var(--accent);
+      padding: 6px 10px;
+      text-align: left;
+      border: 1px solid var(--border);
+      font-weight: 600;
+    }
+    .result-preview td {
+      padding: 5px 10px;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+    .result-preview tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    .result-preview .more-rows {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 4px;
+      text-align: right;
+    }
+
+    /* Session complete banner */
+    .complete-banner {
+      background: linear-gradient(135deg, rgba(34,197,94,0.15), rgba(0,212,255,0.1));
+      border: 1px solid var(--success);
+      border-radius: 12px;
+      padding: 20px 16px;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+    .complete-banner h2 { font-size: 20px; margin-bottom: 6px; }
+    .complete-banner p { font-size: 14px; color: var(--text-dim); }
+    .complete-banner .streak-display {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--warning);
+      margin: 10px 0;
+    }
+
+    /* Progress tab */
+    .progress-bar-wrap {
+      background: var(--surface2);
+      border-radius: 8px;
+      height: 10px;
+      margin: 8px 0 14px;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent2), var(--accent));
+      border-radius: 8px;
+      transition: width 0.4s;
+    }
+
+    .concept-list { list-style: none; }
+    .concept-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+    }
+    .concept-item:last-child { border-bottom: none; }
+    .concept-check { font-size: 16px; }
+    .concept-check.done { color: var(--success); }
+    .concept-check.pending { color: var(--text-dim); }
+    .concept-level-pill {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 600;
+    }
+    .lvl-1 { background: rgba(124,58,237,0.2); color: #a78bfa; }
+    .lvl-2 { background: rgba(0,212,255,0.15); color: var(--accent); }
+    .lvl-3 { background: rgba(34,197,94,0.15); color: var(--success); }
+    .lvl-4 { background: rgba(245,158,11,0.15); color: var(--warning); }
+
+    .reset-btn {
+      width: 100%;
+      margin-top: 16px;
+      padding: 14px;
+      min-height: 48px;
+      background: transparent;
+      color: var(--error);
+      border: 1px solid var(--error);
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .reset-btn:hover { background: rgba(239,68,68,0.1); }
+
+    /* Schema tab */
+    .schema-table-wrap {
+      overflow-x: auto;
+      margin-bottom: 6px;
+    }
+    .schema-table {
+      border-collapse: collapse;
+      font-size: 12px;
+      width: 100%;
+    }
+    .schema-table th {
+      background: var(--surface2);
+      color: var(--accent);
+      padding: 7px 10px;
+      text-align: left;
+      border: 1px solid var(--border);
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .schema-table td {
+      padding: 6px 10px;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      white-space: nowrap;
+    }
+    .schema-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    .table-name {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--warning);
+      margin: 14px 0 6px;
+    }
+    .table-name:first-child { margin-top: 0; }
+
+    /* Misc */
+    .section-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 12px;
+    }
+    .stat-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+      font-size: 14px;
+    }
+    .stat-val { font-weight: 700; color: var(--text); }
+  </style>
+</head>
+<body>
+
+<div id="header">
+  <span class="app-name">⚡ SQL Trainer</span>
+  <div class="badges">
+    <span class="badge level" id="hdr-level">Lvl 1</span>
+    <span class="badge streak" id="hdr-streak">🔥 0</span>
+  </div>
+</div>
+
+<div id="main">
+  <!-- TODAY TAB -->
+  <div id="tab-today" class="tab active">
+    <div id="today-content"></div>
+  </div>
+
+  <!-- PROGRESS TAB -->
+  <div id="tab-progress" class="tab">
+    <div class="card">
+      <div class="section-title">Your Progress</div>
+      <div class="stat-row"><span>Level</span><span class="stat-val" id="prog-level">1 — Foundations</span></div>
+      <div class="stat-row"><span>Day Streak</span><span class="stat-val" id="prog-streak">0</span></div>
+      <div class="stat-row"><span>Sessions done</span><span class="stat-val" id="prog-sessions">0</span></div>
+      <div class="stat-row"><span>Level progress</span><span class="stat-val" id="prog-pct">0%</span></div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill" id="prog-bar" style="width:0%"></div></div>
+    </div>
+
+    <div class="card">
+      <div class="section-title">Concepts</div>
+      <ul class="concept-list" id="concept-list"></ul>
+    </div>
+
+    <button class="reset-btn" id="reset-btn">Reset all progress</button>
+  </div>
+
+  <!-- SCHEMA TAB -->
+  <div id="tab-schema" class="tab">
+    <div class="card">
+      <div class="section-title">Database Schema</div>
+      <div id="schema-content"></div>
+    </div>
+  </div>
+</div>
+
+<nav id="bottom-nav">
+  <button class="nav-btn active" id="nav-today" onclick="switchTab('today')">
+    <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    Today
+  </button>
+  <button class="nav-btn" id="nav-progress" onclick="switchTab('progress')">
+    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    Progress
+  </button>
+  <button class="nav-btn" id="nav-schema" onclick="switchTab('schema')">
+    <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+    Schema
+  </button>
+</nav>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────────────
+
+const TABLES = {
+  loans: [
+    {loan_id:1,  customer_id:101, amount:5000,  status:'active',    interest_rate:5.5,  start_year:2023},
+    {loan_id:2,  customer_id:102, amount:12000, status:'closed',    interest_rate:7.2,  start_year:2022},
+    {loan_id:3,  customer_id:103, amount:8500,  status:'active',    interest_rate:6.1,  start_year:2023},
+    {loan_id:4,  customer_id:101, amount:3200,  status:'defaulted', interest_rate:9.5,  start_year:2021},
+    {loan_id:5,  customer_id:104, amount:15000, status:'active',    interest_rate:4.8,  start_year:2024},
+    {loan_id:6,  customer_id:102, amount:6700,  status:'active',    interest_rate:5.9,  start_year:2024},
+    {loan_id:7,  customer_id:105, amount:22000, status:'closed',    interest_rate:8.3,  start_year:2022},
+    {loan_id:8,  customer_id:103, amount:9100,  status:'active',    interest_rate:6.5,  start_year:2023},
+    {loan_id:9,  customer_id:106, amount:4500,  status:'defaulted', interest_rate:11.2, start_year:2021},
+    {loan_id:10, customer_id:107, amount:18000, status:'active',    interest_rate:5.1,  start_year:2024}
+  ],
+  customers: [
+    {customer_id:101, name:'Alice Wong',  city:'Singapore',    segment:'retail',    credit_score:720},
+    {customer_id:102, name:'Bob Tan',     city:'Kuala Lumpur', segment:'sme',       credit_score:680},
+    {customer_id:103, name:'Carol Lim',   city:'Singapore',    segment:'retail',    credit_score:750},
+    {customer_id:104, name:'David Chen',  city:'Jakarta',      segment:'corporate', credit_score:810},
+    {customer_id:105, name:'Eve Rahman',  city:'Kuala Lumpur', segment:'corporate', credit_score:790},
+    {customer_id:106, name:'Frank Ho',    city:'Singapore',    segment:'retail',    credit_score:580},
+    {customer_id:107, name:'Grace Park',  city:'Bangkok',      segment:'sme',       credit_score:700},
+    {customer_id:108, name:'Han Solo',    city:'Tokyo',        segment:'retail',    credit_score:660}
+  ],
+  payments: [
+    {payment_id:1,  loan_id:1,  amount:250, month:'Jan', status:'paid'},
+    {payment_id:2,  loan_id:1,  amount:250, month:'Feb', status:'paid'},
+    {payment_id:3,  loan_id:1,  amount:250, month:'Mar', status:'missed'},
+    {payment_id:4,  loan_id:2,  amount:600, month:'Jan', status:'paid'},
+    {payment_id:5,  loan_id:3,  amount:425, month:'Jan', status:'paid'},
+    {payment_id:6,  loan_id:3,  amount:425, month:'Feb', status:'paid'},
+    {payment_id:7,  loan_id:4,  amount:160, month:'Jan', status:'missed'},
+    {payment_id:8,  loan_id:5,  amount:750, month:'Jan', status:'paid'},
+    {payment_id:9,  loan_id:6,  amount:335, month:'Jan', status:'paid'},
+    {payment_id:10, loan_id:6,  amount:335, month:'Feb', status:'missed'},
+    {payment_id:11, loan_id:8,  amount:455, month:'Jan', status:'paid'},
+    {payment_id:12, loan_id:10, amount:900, month:'Jan', status:'paid'}
+  ]
+};
+
+// ─── CURRICULUM ──────────────────────────────────────────────────────────────
+
+const CURRICULUM = {
+  1: { name: 'Foundations',        concepts: ['select_basics','where_filter','where_operators','order_by','distinct','limit'] },
+  2: { name: 'Aggregation',        concepts: ['aggregate_functions','group_by','having','case_when'] },
+  3: { name: 'Joins & Subqueries', concepts: ['inner_join','left_join','subquery','in_exists'] },
+  4: { name: 'CTEs & Windows',     concepts: ['cte_basics','row_number','rank_dense_rank','running_total','lag_lead'] }
+};
+
+const CONCEPT_LABELS = {
+  select_basics: 'SELECT', where_filter: 'WHERE', where_operators: 'AND / OR',
+  order_by: 'ORDER BY', distinct: 'DISTINCT', limit: 'LIMIT',
+  aggregate_functions: 'Aggregates', group_by: 'GROUP BY', having: 'HAVING', case_when: 'CASE WHEN',
+  inner_join: 'JOIN', left_join: 'LEFT JOIN', subquery: 'Subquery', in_exists: 'IN',
+  cte_basics: 'CTE', row_number: 'ROW_NUMBER', rank_dense_rank: 'RANK',
+  running_total: 'Running Total', lag_lead: 'LAG / LEAD'
+};
+
+// ─── TIPS & SCENARIOS ────────────────────────────────────────────────────────
+
+const TIPS = {
+  select_basics: "SELECT specifies which columns to return. Use * for all columns, or name specific columns to control the output. Column order in the result follows your SELECT list.",
+  where_filter: "WHERE filters rows before they are returned. The condition must evaluate to TRUE for a row to be included. String values use single quotes: WHERE status = 'active'.",
+  where_operators: "AND requires BOTH conditions to be true. OR requires EITHER. AND has higher precedence than OR — use parentheses when mixing them to make intent explicit.",
+  order_by: "ORDER BY sorts results. DESC = largest/latest first, ASC = smallest/earliest (the default). Without ORDER BY, row order is unpredictable — never rely on it.",
+  distinct: "DISTINCT removes duplicate values. It applies to the full row — if you SELECT two columns, DISTINCT removes rows where BOTH columns are identical.",
+  limit: "LIMIT caps the number of rows returned. Always pair it with ORDER BY — without ORDER BY, LIMIT picks rows in an arbitrary order that may change between runs.",
+  aggregate_functions: "COUNT(*) counts all rows. COUNT(column) skips NULLs. SUM, AVG, MIN, MAX work on numeric columns. Aggregate functions collapse many rows into one value.",
+  group_by: "GROUP BY collapses rows with the same value into one group. Every column in SELECT must either appear in GROUP BY or be inside an aggregate function like COUNT or SUM.",
+  having: "HAVING filters after grouping — like WHERE but for aggregate results. WHERE runs before GROUP BY and can't see COUNT or SUM. HAVING runs after and can.",
+  case_when: "CASE WHEN condition THEN value WHEN condition2 THEN value2 ELSE default END — returns a value per row based on conditions. The ELSE is optional but good practice. Always close with END.",
+  inner_join: "JOIN (or INNER JOIN) returns only rows where the join condition matches in BOTH tables. Rows with no match are dropped from the result.",
+  left_join: "LEFT JOIN keeps ALL rows from the left table. Where there is no match in the right table, right-side columns are NULL. Use COUNT(right.column) not COUNT(*) to get 0 for no-match rows.",
+  subquery: "A subquery is a SELECT inside another SELECT, wrapped in parentheses. It runs first and its result is used by the outer query. Good for thresholds you need to compute on the fly.",
+  in_exists: "IN checks if a value matches any value in a list. IN (subquery) checks against a dynamically computed list. Cleaner than writing multiple OR conditions.",
+  cte_basics: "A CTE (WITH ... AS) names a subquery at the top of your statement. It runs once, then you reference it by name. CTEs make complex queries readable by breaking them into named steps.",
+  row_number: "ROW_NUMBER() OVER (ORDER BY ...) assigns a unique sequential integer to each row. The ORDER BY inside OVER controls the ranking — it does not sort the output. Add an outer ORDER BY to sort results.",
+  rank_dense_rank: "RANK() assigns the same rank to ties, then skips numbers (1,1,3). DENSE_RANK() also ties equal rows but never skips (1,1,2). ROW_NUMBER() always gives unique numbers even on ties. Pick based on how you want ties handled.",
+  running_total: "SUM(col) OVER (ORDER BY ...) produces a running cumulative sum — each row shows the total of all rows up to and including that point. The ORDER BY inside OVER defines the accumulation order.",
+  lag_lead: "LAG(col) OVER (ORDER BY ...) fetches the previous row's value. LEAD(col) fetches the next row's value. Both return NULL at the boundary. Useful for period-over-period comparisons."
+};
+
+const SCENARIOS = {
+  select_basics: "A risk auditor asks for a raw export of all loan records. You run SELECT * FROM loans to pull every column for every loan.",
+  where_filter: "Collections needs to call customers with active loans only. You filter to WHERE status = 'active' so they don't call closed accounts.",
+  where_operators: "Credit wants loans that are both active AND high value for portfolio review. Two conditions joined with AND narrow the list to exactly what they need.",
+  order_by: "A manager wants to review the highest-risk loans first. ORDER BY interest_rate DESC brings the most expensive loans to the top of the list.",
+  distinct: "You're building a city filter dropdown for a CRM. SELECT DISTINCT city returns each city once — no duplicates bloating the UI.",
+  limit: "A dashboard widget shows 'Top 5 overdue loans'. LIMIT 5 with ORDER BY due_date caps the result to what the widget needs.",
+  aggregate_functions: "Finance asks: 'How many loans do we have, and what's our average exposure?' COUNT(*) and AVG(amount) answer both in a single query row.",
+  group_by: "Ops wants to see how staff should be allocated by loan status. GROUP BY status + COUNT(*) shows exactly how many loans are in each bucket.",
+  having: "A regional manager wants cities with more than 3 customers. HAVING COUNT(*) > 3 filters on the count — WHERE can't do this because the count doesn't exist until after grouping.",
+  case_when: "A report needs a human-readable risk band column derived from interest rate ranges. CASE WHEN creates that label per row without changing the underlying data.",
+  inner_join: "Support needs customer names next to loan records, but loans only stores customer_id. JOIN customers on that key brings the name in.",
+  left_join: "You're auditing which customers have never taken a loan. LEFT JOIN then checking WHERE loan_id IS NULL surfaces those customers — a regular JOIN would drop them entirely.",
+  subquery: "You need loans above the portfolio average — but you don't know the average until you query it. A subquery computes the average inline so the outer query can compare against it.",
+  in_exists: "Compliance needs to flag customers who appear on a defaulted-loan list. IN (SELECT customer_id FROM loans WHERE status='defaulted') checks each customer against that list in one step.",
+  cte_basics: "A reporting query needs to find customers whose total borrowing exceeds a threshold. You write a CTE that aggregates loans per customer, then filter on it — much cleaner than a nested subquery.",
+  row_number: "The credit team wants the top loan per customer ranked by amount. ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY amount DESC) numbers each customer's loans, then you filter WHERE row_num = 1.",
+  rank_dense_rank: "A leaderboard needs to handle tied scores — two customers with the same credit score should both show rank 1. RANK() or DENSE_RANK() handles this; ROW_NUMBER() would arbitrarily break the tie.",
+  running_total: "Finance wants a running portfolio total: each new loan row shows the cumulative amount lent up to that point. SUM(amount) OVER (ORDER BY loan_id) builds this without any self-join.",
+  lag_lead: "Collections wants to compare each month's payment to the previous month's to spot drops. LAG(amount) OVER (ORDER BY month) pulls the prior row's value into the current row for easy comparison."
+};
+
+// ─── QUESTION BANK ───────────────────────────────────────────────────────────
+
+const QUESTIONS = [
+  {
+    id:'q1', level:1, concept:'select_basics', type:'consolidate', ordered:false,
+    prompt:'The compliance team needs a full export of all loans. Retrieve every column from the <strong>loans</strong> table.',
+    solution:'SELECT * FROM loans',
+    expected: TABLES.loans,
+    hint:'Use SELECT * FROM loans with no WHERE clause.'
+  },
+  {
+    id:'q2', level:1, concept:'select_basics', type:'stretch', ordered:false,
+    prompt:'Show only the loan_id, amount, and status columns from the loans table (in that order).',
+    solution:'SELECT loan_id, amount, status FROM loans',
+    expected: TABLES.loans.map(r=>({loan_id:r.loan_id, amount:r.amount, status:r.status})),
+    hint:'List the three column names after SELECT: SELECT loan_id, amount, status FROM loans'
+  },
+  {
+    id:'q3', level:1, concept:'where_filter', type:'consolidate', ordered:false,
+    prompt:"Collections needs a call list of active loans only. Find all loans where status is 'active'.",
+    solution:"SELECT * FROM loans WHERE status = 'active'",
+    expected: TABLES.loans.filter(r=>r.status==='active'),
+    hint:"Use WHERE status = 'active' (with single quotes around the value)."
+  },
+  {
+    id:'q4', level:1, concept:'where_filter', type:'stretch', ordered:false,
+    prompt:'Credit risk wants customers with a credit_score strictly above 700. Return all columns.',
+    solution:'SELECT * FROM customers WHERE credit_score > 700',
+    expected: TABLES.customers.filter(r=>r.credit_score>700),
+    hint:'WHERE credit_score > 700 — note: > 700 excludes exactly 700 (Grace Park).'
+  },
+  {
+    id:'q5', level:1, concept:'where_operators', type:'consolidate', ordered:false,
+    prompt:"Flag high-value active loans: find loans where status is 'active' AND amount is greater than 8000.",
+    solution:"SELECT * FROM loans WHERE status = 'active' AND amount > 8000",
+    expected: TABLES.loans.filter(r=>r.status==='active' && r.amount>8000),
+    hint:"Combine two conditions with AND. Both must be true for a row to be included."
+  },
+  {
+    id:'q6', level:1, concept:'where_operators', type:'stretch', ordered:false,
+    prompt:"Flag problematic loans: find loans that are either 'defaulted' OR have an interest_rate below 5.5.",
+    solution:"SELECT * FROM loans WHERE status = 'defaulted' OR interest_rate < 5.5",
+    expected: TABLES.loans.filter(r=>r.status==='defaulted' || r.interest_rate<5.5),
+    hint:"Use OR — a row is included if EITHER condition is true. Don't confuse AND with OR."
+  },
+  {
+    id:'q7', level:1, concept:'order_by', type:'consolidate', ordered:true,
+    prompt:'Management wants the customer list sorted by credit_score highest first. Return all columns in that order.',
+    solution:'SELECT * FROM customers ORDER BY credit_score DESC',
+    expected: [...TABLES.customers].sort((a,b)=>b.credit_score-a.credit_score),
+    hint:'Add ORDER BY credit_score DESC at the end of your query.'
+  },
+  {
+    id:'q8', level:1, concept:'order_by', type:'stretch', ordered:true,
+    prompt:'List all loans ordered by amount from smallest to largest.',
+    solution:'SELECT * FROM loans ORDER BY amount ASC',
+    expected: [...TABLES.loans].sort((a,b)=>a.amount-b.amount),
+    hint:'ORDER BY amount ASC — ASC is smallest first (it\'s also the default if you omit it).'
+  },
+  {
+    id:'q9', level:1, concept:'distinct', type:'consolidate', ordered:false,
+    prompt:'What unique loan statuses exist? Return each status exactly once.',
+    solution:'SELECT DISTINCT status FROM loans',
+    expected: [{status:'active'},{status:'closed'},{status:'defaulted'}],
+    hint:'Add DISTINCT right after SELECT: SELECT DISTINCT status FROM loans'
+  },
+  {
+    id:'q10', level:1, concept:'distinct', type:'stretch', ordered:false,
+    prompt:'Build a city dropdown for the customer search form. List each city once (no duplicates).',
+    solution:'SELECT DISTINCT city FROM customers',
+    expected: [{city:'Singapore'},{city:'Kuala Lumpur'},{city:'Jakarta'},{city:'Bangkok'},{city:'Tokyo'}],
+    hint:'SELECT DISTINCT city FROM customers'
+  },
+  {
+    id:'q11', level:1, concept:'limit', type:'consolidate', ordered:true,
+    prompt:'Show the 3 loans with the highest amounts (largest first).',
+    solution:'SELECT * FROM loans ORDER BY amount DESC LIMIT 3',
+    expected: [...TABLES.loans].sort((a,b)=>b.amount-a.amount).slice(0,3),
+    hint:'Use ORDER BY amount DESC then LIMIT 3. Without ORDER BY, LIMIT picks arbitrary rows.'
+  },
+  {
+    id:'q12', level:1, concept:'limit', type:'stretch', ordered:true,
+    prompt:'Find the single customer with the lowest credit score.',
+    solution:'SELECT * FROM customers ORDER BY credit_score ASC LIMIT 1',
+    expected: [...TABLES.customers].sort((a,b)=>a.credit_score-b.credit_score).slice(0,1),
+    hint:'ORDER BY credit_score ASC (lowest first) then LIMIT 1.'
+  },
+  {
+    id:'q13', level:2, concept:'aggregate_functions', type:'consolidate', ordered:false,
+    prompt:'Finance needs a headcount: how many loans are in the system? Return a single number.',
+    solution:'SELECT COUNT(*) FROM loans',
+    expected: [{'COUNT(*)':10}],
+    hint:'SELECT COUNT(*) FROM loans — COUNT(*) counts every row.'
+  },
+  {
+    id:'q14', level:2, concept:'aggregate_functions', type:'stretch', ordered:false,
+    prompt:"For a portfolio report, find the total amount lent (SUM) and the average loan amount (AVG). Name them total and average.",
+    solution:'SELECT SUM(amount) AS total, AVG(amount) AS average FROM loans',
+    expected: [{total:104000, average:10400}],
+    hint:'SELECT SUM(amount) AS total, AVG(amount) AS average FROM loans'
+  },
+  {
+    id:'q15', level:2, concept:'group_by', type:'consolidate', ordered:false,
+    prompt:'The ops team needs loan counts per status. Show status and the count, named loan_count.',
+    solution:'SELECT status, COUNT(*) AS loan_count FROM loans GROUP BY status',
+    expected: [{status:'active',loan_count:6},{status:'closed',loan_count:2},{status:'defaulted',loan_count:2}],
+    hint:'GROUP BY status then COUNT(*) AS loan_count. Every SELECT column not in an aggregate must be in GROUP BY.'
+  },
+  {
+    id:'q16', level:2, concept:'group_by', type:'stretch', ordered:false,
+    prompt:'Find the total loan amount per customer. Show customer_id and the sum named total_amount.',
+    solution:'SELECT customer_id, SUM(amount) AS total_amount FROM loans GROUP BY customer_id',
+    expected: [
+      {customer_id:101,total_amount:8200},
+      {customer_id:102,total_amount:18700},
+      {customer_id:103,total_amount:17600},
+      {customer_id:104,total_amount:15000},
+      {customer_id:105,total_amount:22000},
+      {customer_id:106,total_amount:4500},
+      {customer_id:107,total_amount:18000}
+    ],
+    hint:'GROUP BY customer_id and SUM(amount) AS total_amount.'
+  },
+  {
+    id:'q17', level:2, concept:'having', type:'consolidate', ordered:false,
+    prompt:'Find customer_ids that have MORE than one loan. Show customer_id and their loan count named loan_count.',
+    solution:'SELECT customer_id, COUNT(*) AS loan_count FROM loans GROUP BY customer_id HAVING COUNT(*) > 1',
+    expected: [{customer_id:101,loan_count:2},{customer_id:102,loan_count:2},{customer_id:103,loan_count:2}],
+    hint:'Use HAVING COUNT(*) > 1 after GROUP BY — not WHERE. WHERE runs before grouping and can\'t see COUNT.'
+  },
+  {
+    id:'q18', level:2, concept:'having', type:'stretch', ordered:false,
+    prompt:'Find cities where the average customer credit score is ABOVE 700. Show city and avg_credit.',
+    solution:'SELECT city, AVG(credit_score) AS avg_credit FROM customers GROUP BY city HAVING AVG(credit_score) > 700',
+    expected: [{city:'Kuala Lumpur',avg_credit:735},{city:'Jakarta',avg_credit:810}],
+    hint:'HAVING AVG(credit_score) > 700 — compare the aggregate in HAVING, not WHERE.'
+  },
+  {
+    id:'q19', level:2, concept:'case_when', type:'consolidate', ordered:false,
+    prompt:"Label each loan: 'high risk' if interest_rate > 8, otherwise 'standard'. Return loan_id and risk_label (in that order).",
+    solution:"SELECT loan_id, CASE WHEN interest_rate > 8 THEN 'high risk' ELSE 'standard' END AS risk_label FROM loans",
+    expected: TABLES.loans.map(r=>({loan_id:r.loan_id, risk_label: r.interest_rate>8?'high risk':'standard'})),
+    hint:"CASE WHEN interest_rate > 8 THEN 'high risk' ELSE 'standard' END AS risk_label — don't forget END."
+  },
+  {
+    id:'q20', level:2, concept:'case_when', type:'stretch', ordered:false,
+    prompt:"Map each customer segment to a tier: 'corporate'→'Enterprise', 'sme'→'Business', 'retail'→'Personal'. Return name and tier (in that order).",
+    solution:"SELECT name, CASE WHEN segment='corporate' THEN 'Enterprise' WHEN segment='sme' THEN 'Business' ELSE 'Personal' END AS tier FROM customers",
+    expected: TABLES.customers.map(r=>({name:r.name, tier:r.segment==='corporate'?'Enterprise':r.segment==='sme'?'Business':'Personal'})),
+    hint:"Use multiple WHEN clauses: CASE WHEN ... THEN ... WHEN ... THEN ... ELSE ... END"
+  },
+  {
+    id:'q21', level:3, concept:'inner_join', type:'consolidate', ordered:false,
+    prompt:'The support team needs customer names next to their loans. Join loans and customers on customer_id. Return name, amount, status (in that order).',
+    solution:'SELECT c.name, l.amount, l.status FROM loans l JOIN customers c ON l.customer_id = c.customer_id',
+    expected: TABLES.loans.map(l=>{const c=TABLES.customers.find(c=>c.customer_id===l.customer_id);return {name:c.name,amount:l.amount,status:l.status};}),
+    hint:'JOIN customers c ON l.customer_id = c.customer_id — match the key that appears in both tables.'
+  },
+  {
+    id:'q22', level:3, concept:'inner_join', type:'stretch', ordered:false,
+    prompt:'For each payment, show the payment_id, customer name (from customers), and payment amount and status. Join payments→loans→customers.',
+    solution:'SELECT p.payment_id, c.name, p.amount, p.status FROM payments p JOIN loans l ON p.loan_id = l.loan_id JOIN customers c ON l.customer_id = c.customer_id',
+    expected: TABLES.payments.map(p=>{const l=TABLES.loans.find(l=>l.loan_id===p.loan_id);const c=TABLES.customers.find(c=>c.customer_id===l.customer_id);return {payment_id:p.payment_id,name:c.name,amount:p.amount,status:p.status};}),
+    hint:'Chain two JOINs: payments JOIN loans then loans JOIN customers.'
+  },
+  {
+    id:'q23', level:3, concept:'left_join', type:'consolidate', ordered:false,
+    prompt:'Audit which customers have no loans. List ALL customers and the count of their loans named loan_count (customers with no loans should show 0).',
+    solution:'SELECT c.name, COUNT(l.loan_id) AS loan_count FROM customers c LEFT JOIN loans l ON c.customer_id = l.customer_id GROUP BY c.name',
+    expected: (function(){
+      const loanMap={};
+      TABLES.loans.forEach(l=>loanMap[l.customer_id]=(loanMap[l.customer_id]||0)+1);
+      return TABLES.customers.map(c=>({name:c.name, loan_count:loanMap[c.customer_id]||0}));
+    })(),
+    hint:"LEFT JOIN keeps all rows from the left table (customers). COUNT(l.loan_id) returns 0 when there's no match — COUNT(*) would return 1."
+  },
+  {
+    id:'q24', level:3, concept:'subquery', type:'consolidate', ordered:false,
+    prompt:'Find all loans with an amount GREATER than the average loan amount. Return all columns.',
+    solution:'SELECT * FROM loans WHERE amount > (SELECT AVG(amount) FROM loans)',
+    expected: TABLES.loans.filter(r=>r.amount>10400),
+    hint:'Put SELECT AVG(amount) FROM loans inside parentheses and compare with >.'
+  },
+  {
+    id:'q25', level:3, concept:'subquery', type:'stretch', ordered:false,
+    prompt:"Find all customers who have at least one active loan. Use a subquery with IN. Return all customer columns.",
+    solution:"SELECT * FROM customers WHERE customer_id IN (SELECT customer_id FROM loans WHERE status = 'active')",
+    expected: (function(){
+      const ids=new Set(TABLES.loans.filter(l=>l.status==='active').map(l=>l.customer_id));
+      return TABLES.customers.filter(c=>ids.has(c.customer_id));
+    })(),
+    hint:"WHERE customer_id IN (SELECT customer_id FROM loans WHERE status = 'active')"
+  },
+  {
+    id:'q26', level:3, concept:'in_exists', type:'consolidate', ordered:false,
+    prompt:'Flag customers on the defaulted list. Return the names of customers who have at least one defaulted loan.',
+    solution:"SELECT name FROM customers WHERE customer_id IN (SELECT customer_id FROM loans WHERE status = 'defaulted')",
+    expected: (function(){
+      const ids=new Set(TABLES.loans.filter(l=>l.status==='defaulted').map(l=>l.customer_id));
+      return TABLES.customers.filter(c=>ids.has(c.customer_id)).map(c=>({name:c.name}));
+    })(),
+    hint:"IN (SELECT customer_id FROM loans WHERE status = 'defaulted') — the subquery returns the list to check against."
+  },
+  {
+    id:'q27', level:4, concept:'cte_basics', type:'consolidate', ordered:false,
+    prompt:"Write a CTE named <strong>active_loans</strong> that selects all active loans, then select everything from it.",
+    solution:"WITH active_loans AS (SELECT * FROM loans WHERE status = 'active') SELECT * FROM active_loans",
+    expected: TABLES.loans.filter(r=>r.status==='active'),
+    hint:"WITH active_loans AS (SELECT * FROM loans WHERE status = 'active') SELECT * FROM active_loans"
+  },
+  {
+    id:'q28', level:4, concept:'cte_basics', type:'stretch', ordered:false,
+    prompt:"Write a CTE named <strong>customer_totals</strong> that sums loan amounts per customer_id. Then select rows where the total is above 15000. Show customer_id and total_amount.",
+    solution:"WITH customer_totals AS (SELECT customer_id, SUM(amount) AS total_amount FROM loans GROUP BY customer_id) SELECT * FROM customer_totals WHERE total_amount > 15000",
+    expected: (function(){
+      const map={};
+      TABLES.loans.forEach(l=>map[l.customer_id]=(map[l.customer_id]||0)+l.amount);
+      return Object.entries(map)
+        .map(([id,tot])=>({customer_id:Number(id),total_amount:tot}))
+        .filter(r=>r.total_amount>15000);
+    })(),
+    hint:"Write the CTE to GROUP BY customer_id with SUM(amount) AS total_amount, then filter WHERE total_amount > 15000 in the outer SELECT."
+  },
+  {
+    id:'q29', level:4, concept:'row_number', type:'consolidate', ordered:false,
+    prompt:"Assign a row number to each loan ordered by amount descending using ROW_NUMBER(). Return loan_id, amount, and row_num (in that order).",
+    solution:"SELECT loan_id, amount, ROW_NUMBER() OVER (ORDER BY amount DESC) AS row_num FROM loans",
+    expected: (function(){
+      const sorted=[...TABLES.loans].sort((a,b)=>b.amount-a.amount);
+      return sorted.map((l,i)=>({loan_id:l.loan_id,amount:l.amount,row_num:i+1}));
+    })(),
+    hint:"SELECT loan_id, amount, ROW_NUMBER() OVER (ORDER BY amount DESC) AS row_num FROM loans"
+  },
+  {
+    id:'q30', level:4, concept:'row_number', type:'stretch', ordered:false,
+    prompt:"Show each customer's name and their rank by credit_score (highest = rank 1) using ROW_NUMBER(). Return name and score_rank.",
+    solution:"SELECT name, ROW_NUMBER() OVER (ORDER BY credit_score DESC) AS score_rank FROM customers",
+    expected: (function(){
+      const sorted=[...TABLES.customers].sort((a,b)=>b.credit_score-a.credit_score);
+      return sorted.map((c,i)=>({name:c.name,score_rank:i+1}));
+    })(),
+    hint:"SELECT name, ROW_NUMBER() OVER (ORDER BY credit_score DESC) AS score_rank FROM customers"
+  },
+  {
+    id:'q31', level:4, concept:'rank_dense_rank', type:'consolidate', ordered:false,
+    prompt:"Rank each loan by interest_rate from highest to lowest using RANK(). Return loan_id, interest_rate, and rate_rank.",
+    solution:"SELECT loan_id, interest_rate, RANK() OVER (ORDER BY interest_rate DESC) AS rate_rank FROM loans",
+    expected: (function(){
+      const sorted=[...TABLES.loans].sort((a,b)=>b.interest_rate-a.interest_rate);
+      return sorted.map((l,i)=>({loan_id:l.loan_id,interest_rate:l.interest_rate,rate_rank:i+1}));
+    })(),
+    hint:"SELECT loan_id, interest_rate, RANK() OVER (ORDER BY interest_rate DESC) AS rate_rank FROM loans"
+  },
+  {
+    id:'q32', level:4, concept:'rank_dense_rank', type:'stretch', ordered:false,
+    prompt:"For each loan, show customer_id, loan_id, amount, and the loan's rank within that customer's loans by amount (largest first) using ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY amount DESC). Name it loan_rank.",
+    solution:"SELECT customer_id, loan_id, amount, ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY amount DESC) AS loan_rank FROM loans",
+    expected: (function(){
+      const result=[];
+      const byCustomer={};
+      TABLES.loans.forEach(l=>{
+        if(!byCustomer[l.customer_id]) byCustomer[l.customer_id]=[];
+        byCustomer[l.customer_id].push(l);
+      });
+      Object.values(byCustomer).forEach(loans=>{
+        loans.sort((a,b)=>b.amount-a.amount).forEach((l,i)=>{
+          result.push({customer_id:l.customer_id,loan_id:l.loan_id,amount:l.amount,loan_rank:i+1});
+        });
+      });
+      return result;
+    })(),
+    hint:"ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY amount DESC) — PARTITION BY resets the counter for each customer."
+  },
+  {
+    id:'q33', level:4, concept:'running_total', type:'consolidate', ordered:false,
+    prompt:"Show each loan's loan_id, amount, and a running cumulative total named running_total, accumulated in loan_id order.",
+    solution:"SELECT loan_id, amount, SUM(amount) OVER (ORDER BY loan_id) AS running_total FROM loans",
+    expected: (function(){
+      const sorted=[...TABLES.loans].sort((a,b)=>a.loan_id-b.loan_id);
+      let running=0;
+      return sorted.map(l=>{running+=l.amount; return {loan_id:l.loan_id,amount:l.amount,running_total:running};});
+    })(),
+    hint:"SELECT loan_id, amount, SUM(amount) OVER (ORDER BY loan_id) AS running_total FROM loans — the ORDER BY inside OVER controls accumulation order."
+  },
+  {
+    id:'q34', level:4, concept:'lag_lead', type:'consolidate', ordered:false,
+    prompt:"For each payment ordered by payment_id, show payment_id, amount, and the previous payment's amount named prev_amount (NULL for the first row).",
+    solution:"SELECT payment_id, amount, LAG(amount) OVER (ORDER BY payment_id) AS prev_amount FROM payments",
+    expected: (function(){
+      const sorted=[...TABLES.payments].sort((a,b)=>a.payment_id-b.payment_id);
+      return sorted.map((p,i)=>({payment_id:p.payment_id,amount:p.amount,prev_amount:i===0?null:sorted[i-1].amount}));
+    })(),
+    hint:"LAG(amount) OVER (ORDER BY payment_id) — LAG fetches the previous row's value; the first row gets NULL."
+  },
+  {
+    id:'q35', level:4, concept:'lag_lead', type:'stretch', ordered:false,
+    prompt:"For each loan ordered by loan_id, show loan_id, amount, and the NEXT loan's amount named next_amount (NULL for the last row).",
+    solution:"SELECT loan_id, amount, LEAD(amount) OVER (ORDER BY loan_id) AS next_amount FROM loans",
+    expected: (function(){
+      const sorted=[...TABLES.loans].sort((a,b)=>a.loan_id-b.loan_id);
+      return sorted.map((l,i)=>({loan_id:l.loan_id,amount:l.amount,next_amount:i===sorted.length-1?null:sorted[i+1].amount}));
+    })(),
+    hint:"LEAD(amount) OVER (ORDER BY loan_id) — LEAD fetches the next row's value; the last row gets NULL."
+  }
+];
+
+// ─── UNLOCK POOL ─────────────────────────────────────────────────────────────
+
+const UNLOCK_POOL = ['q27','q29','q31','q33','q34','q28','q30','q32','q35'];
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+
+const STORAGE_KEY = 'sql_trainer_v1';
+
+const DEFAULT_PROGRESS = {
+  level: 1,
+  streak: 0,
+  lastSessionDate: null,
+  lastStreakDate: null,
+  completedSessions: 0,
+  completedQuestions: [],
+  currentSession: null
+};
+
+function loadProgress() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return Object.assign({}, DEFAULT_PROGRESS, JSON.parse(raw));
+  } catch(e) {}
+  return Object.assign({}, DEFAULT_PROGRESS);
+}
+
+function saveProgress(p) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
+}
+
+let progress = loadProgress();
+
+// ─── SESSION LOGIC ───────────────────────────────────────────────────────────
+
+function getTodayString() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth()+1).padStart(2,'0');
+  const day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+function pickQuestion(level, concept, type, excludeIds) {
+  let q = QUESTIONS.find(q => q.level===level && q.concept===concept && q.type===type && !excludeIds.includes(q.id));
+  if (!q) q = QUESTIONS.find(q => q.level===level && q.concept===concept && q.type===type);
+  return q;
+}
+
+function generateSession() {
+  const level = progress.level;
+  const concepts = CURRICULUM[level].concepts;
+  const conceptIndex = progress.completedSessions % concepts.length;
+  const concept = concepts[conceptIndex];
+
+  const q1 = pickQuestion(level, concept, 'consolidate', progress.completedQuestions);
+  const exclude = [...progress.completedQuestions, q1 ? q1.id : ''];
+  const q2 = pickQuestion(level, concept, 'stretch', exclude);
+
+  const session = {
+    date: getTodayString(),
+    conceptIndex,
+    concept,
+    q1: {id: q1 ? q1.id : null, status: 'pending', attempts: 0},
+    q2: {id: q2 ? q2.id : null, status: 'locked', attempts: 0}
+  };
+
+  // pick 3 unlock questions cycling through pool
+  const offset = progress.completedSessions % (UNLOCK_POOL.length - 2);
+  session.unlock = {
+    questions: [
+      {id: UNLOCK_POOL[offset % UNLOCK_POOL.length], status:'pending'},
+      {id: UNLOCK_POOL[(offset+1) % UNLOCK_POOL.length], status:'pending'},
+      {id: UNLOCK_POOL[(offset+2) % UNLOCK_POOL.length], status:'pending'}
+    ],
+    totalAttempts: 0,
+    status: 'pending' // 'pending' | 'unlocked' | 'failed'
+  };
+
+  progress.currentSession = session;
+  progress.lastSessionDate = getTodayString();
+  saveProgress(progress);
+  return session;
+}
+
+function getOrCreateSession() {
+  const today = getTodayString();
+  if (progress.lastSessionDate === today && progress.currentSession) {
+    return progress.currentSession;
+  }
+  return generateSession();
+}
+
+function completeSession() {
+  const session = progress.currentSession;
+  if (!session) return;
+
+  // streak logic — prevent double-counting when bonus session completes same day
+  const today = getTodayString();
+  const yesterday = (function(){
+    const d = new Date();
+    d.setDate(d.getDate()-1);
+    const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
+    return `${y}-${m}-${day}`;
+  })();
+
+  if (progress.lastStreakDate !== today) {
+    if (progress.lastStreakDate === yesterday) {
+      progress.streak += 1;
+    } else if (!progress.lastStreakDate) {
+      progress.streak = 1;
+    } else {
+      progress.streak = 1; // streak broken
+    }
+    progress.lastStreakDate = today;
+  }
+
+  // add completed questions
+  if (session.q1.id && !progress.completedQuestions.includes(session.q1.id)) {
+    progress.completedQuestions.push(session.q1.id);
+  }
+  if (session.q2.id && !progress.completedQuestions.includes(session.q2.id)) {
+    progress.completedQuestions.push(session.q2.id);
+  }
+
+  progress.completedSessions += 1;
+
+  // check level up: concepts.length * 2 sessions = one full pass through all concepts with both question types
+  const currentLevel = progress.level;
+  if (currentLevel < 3) {
+    const concepts = CURRICULUM[currentLevel].concepts;
+    const sessionsNeeded = concepts.length;
+    if (progress.completedSessions >= sessionsNeeded) {
+      // count sessions for this level
+      const sessionsForLevel = progress.completedSessions % sessionsNeeded === 0 &&
+        progress.completedSessions > 0 &&
+        // rough heuristic: we've cycled through all concepts
+        CURRICULUM[currentLevel].concepts.every(c =>
+          QUESTIONS.some(q => q.concept===c && q.level===currentLevel && progress.completedQuestions.includes(q.id))
+        );
+      if (sessionsForLevel) {
+        progress.level = Math.min(3, currentLevel + 1);
+      }
+    }
+  }
+
+  saveProgress(progress);
+}
+
+// ─── EVALUATION ENGINE ───────────────────────────────────────────────────────
+
+function setupDB() {
+  ['loans','customers','payments'].forEach(t => {
+    try { alasql(`DROP TABLE ${t}`); } catch(e) {}
+    alasql(`CREATE TABLE ${t}`);
+    alasql.tables[t].data = TABLES[t].map(r => Object.assign({}, r));
+  });
+}
+
+function runQuery(sql) {
+  setupDB();
+  return alasql(sql);
+}
+
+function normalizeVal(v) {
+  if (v === null || v === undefined) return null;
+  if (typeof v === 'number') return Math.round(v * 10000) / 10000;
+  return String(v).trim();
+}
+
+function normalizeResult(result) {
+  return result.map(row => Object.values(row).map(normalizeVal));
+}
+
+function compareResults(actual, expected, ordered) {
+  if (actual.length !== expected.length) return false;
+  const na = normalizeResult(actual);
+  const ne = normalizeResult(expected);
+  if (ordered) {
+    return JSON.stringify(na) === JSON.stringify(ne);
+  }
+  const sortFn = (a,b) => JSON.stringify(a).localeCompare(JSON.stringify(b));
+  return JSON.stringify([...na].sort(sortFn)) === JSON.stringify([...ne].sort(sortFn));
+}
+
+function evaluate(question, userSQL) {
+  try {
+    const result = runQuery(userSQL.trim());
+    const pass = compareResults(result, question.expected, question.ordered || false);
+    if (pass) return {pass:true, result};
+    let hint = question.hint;
+    if (result.length === 0) hint = 'Your query returned no rows. ' + question.hint;
+    else if (result.length !== question.expected.length) hint = `Got ${result.length} row(s), expected ${question.expected.length}. ` + question.hint;
+    return {pass:false, hint, result, got:result.length, expected:question.expected.length};
+  } catch(e) {
+    return {pass:false, hint:`SQL error: ${e.message}`, error:true};
+  }
+}
+
+// ─── RESULT PREVIEW ──────────────────────────────────────────────────────────
+
+function buildResultTable(rows) {
+  if (!rows || rows.length === 0) return '<p style="color:var(--text-dim);font-size:13px;">No rows returned.</p>';
+  const cols = Object.keys(rows[0]);
+  const preview = rows.slice(0,5);
+  const more = rows.length > 5 ? rows.length - 5 : 0;
+  let html = '<table><thead><tr>' + cols.map(c=>`<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+  preview.forEach(row => {
+    html += '<tr>' + cols.map(c=>`<td>${row[c] === null || row[c] === undefined ? '<em>null</em>' : row[c]}</td>`).join('') + '</tr>';
+  });
+  html += '</tbody></table>';
+  if (more) html += `<div class="more-rows">+${more} more row(s)</div>`;
+  return html;
+}
+
+// ─── UNLOCK FUNCTIONS ────────────────────────────────────────────────────────
+
+function updateUnlockHeader() {
+  const el = document.getElementById('unlock-attempts');
+  if (el && progress.currentSession && progress.currentSession.unlock) {
+    const u = progress.currentSession.unlock;
+    el.textContent = `${u.totalAttempts} / 5 attempts used`;
+    if (u.status === 'failed') el.style.color = 'var(--error)';
+  }
+}
+
+function submitUnlock(uIndex) {
+  const session = progress.currentSession;
+  if (!session.unlock || session.unlock.status !== 'pending') return;
+  if (session.unlock.totalAttempts >= 5) return;
+
+  const uSlot = session.unlock.questions[uIndex];
+  if (uSlot.status === 'pass') return; // already passed
+
+  const ta = document.getElementById(`ta-u${uIndex}`);
+  const fb = document.getElementById(`fb-u${uIndex}`);
+  const rp = document.getElementById(`rp-u${uIndex}`);
+  const sql = ta.value.trim();
+  if (!sql) { fb.className='feedback fail show'; fb.innerHTML='Enter a SQL query.'; return; }
+
+  session.unlock.totalAttempts += 1;
+  const qdef = QUESTIONS.find(q=>q.id===uSlot.id);
+  const ev = evaluate(qdef, sql);
+
+  if (ev.pass) {
+    uSlot.status = 'pass';
+    ta.className = 'success';
+    ta.disabled = true;
+    fb.className = 'feedback pass show';
+    fb.innerHTML = `Correct! (${ev.result.length} row(s))`;
+    rp.className = 'result-preview show';
+    rp.innerHTML = buildResultTable(ev.result);
+
+    // check all passed
+    if (session.unlock.questions.every(q=>q.status==='pass')) {
+      session.unlock.status = 'unlocked';
+      saveProgress(progress);
+      // generate next session immediately
+      progress.lastSessionDate = null;
+      progress.currentSession = null;
+      generateSession();
+      setTimeout(()=>renderToday(), 500);
+      return;
+    }
+  } else {
+    ta.className = 'error';
+    fb.className = 'feedback fail show';
+    let msg = ev.hint || 'Not quite right.';
+    if (!ev.error && ev.result && ev.result.length > 0) {
+      fb.innerHTML = `<div>${msg}</div><div class="hint" style="margin-top:8px">Attempts used: ${session.unlock.totalAttempts}/5</div>`;
+      rp.className = 'result-preview show';
+      rp.innerHTML = buildResultTable(ev.result);
+    } else {
+      fb.innerHTML = `<div>${msg}</div><div class="hint" style="margin-top:8px">Attempts used: ${session.unlock.totalAttempts}/5</div>`;
+    }
+  }
+
+  // check attempts exhausted
+  if (session.unlock.totalAttempts >= 5 && session.unlock.questions.some(q=>q.status!=='pass')) {
+    session.unlock.status = 'failed';
+  }
+
+  saveProgress(progress);
+  updateUnlockHeader();
+}
+
+// ─── RENDER TODAY TAB ────────────────────────────────────────────────────────
+
+function renderToday() {
+  const session = getOrCreateSession();
+  const concept = session.concept;
+  const q1def = QUESTIONS.find(q=>q.id===session.q1.id);
+  const q2def = QUESTIONS.find(q=>q.id===session.q2.id);
+  const level = progress.level;
+  const dayNumber = progress.completedSessions + 1;
+  const bothPass = session.q1.status==='pass' && session.q2.status==='pass';
+
+  let html = '';
+
+  // Session meta
+  html += `<div class="card">
+    <div class="session-meta">
+      <strong>Day ${dayNumber}</strong>
+      <span style="color:var(--text-dim)">·</span>
+      <span>Today: <span class="pill concept">${CONCEPT_LABELS[concept]}</span></span>
+    </div>`;
+
+  // Collapsible tip
+  html += `
+    <button class="collapsible-btn" onclick="toggleCollapsible('tip')">
+      <span><span class="icon">💡</span>Tip — ${CONCEPT_LABELS[concept]}</span>
+      <span class="chevron">▼</span>
+    </button>
+    <div class="collapsible-content" id="coll-tip">${TIPS[concept]}</div>
+
+    <button class="collapsible-btn" onclick="toggleCollapsible('scenario')">
+      <span><span class="icon">📊</span>Real-world scenario</span>
+      <span class="chevron">▼</span>
+    </button>
+    <div class="collapsible-content" id="coll-scenario">${SCENARIOS[concept]}</div>
+  </div>`;
+
+  // Session complete banner
+  if (bothPass) {
+    html += `<div class="complete-banner">
+      <h2>Session complete! 🎉</h2>
+      <div class="streak-display">🔥 ${progress.streak}</div>
+      <p>Come back tomorrow for your next session.</p>
+    </div>`;
+  }
+
+  // Q1
+  if (q1def) {
+    const q1 = session.q1;
+    const isDone = q1.status==='pass';
+    html += `<div class="q-card${isDone?' done':''}">
+      <div class="q-header">
+        <span class="q-label">Q1 · Consolidate</span>
+        ${isDone ? '<span class="pill pass">✓ Pass</span>' : ''}
+      </div>
+      <div class="q-prompt">${q1def.prompt}</div>
+      <textarea id="ta-q1" placeholder="Write your SQL here..." ${isDone?'disabled':''}
+        onkeydown="handleTabKey(event)">${isDone ? q1def.solution : ''}</textarea>
+      ${!isDone ? `<button class="run-btn" onclick="submitAnswer('q1')">▶ Run &amp; Check</button>` : ''}
+      <div class="feedback" id="fb-q1"></div>
+      <div class="result-preview" id="rp-q1"></div>
+    </div>`;
+  }
+
+  // Q2
+  if (q2def) {
+    const q2 = session.q2;
+    const isLocked = q2.status==='locked';
+    const isDone = q2.status==='pass';
+    html += `<div class="q-card${isLocked?' locked':''}${isDone?' done':''}">
+      <div class="q-header">
+        <span class="q-label">Q2 · Stretch</span>
+        ${isDone ? '<span class="pill pass">✓ Pass</span>' : isLocked ? '<span class="pill locked">🔒 Complete Q1 first</span>' : ''}
+      </div>
+      <div class="q-prompt">${q2def.prompt}</div>
+      <textarea id="ta-q2" placeholder="Write your SQL here..." ${isDone||isLocked?'disabled':''}
+        onkeydown="handleTabKey(event)">${isDone ? q2def.solution : ''}</textarea>
+      ${!isDone && !isLocked ? `<button class="run-btn" onclick="submitAnswer('q2')">▶ Run &amp; Check</button>` : ''}
+      <div class="feedback" id="fb-q2"></div>
+      <div class="result-preview" id="rp-q2"></div>
+    </div>`;
+  }
+
+  // Unlock section — only show if both Q1 + Q2 passed
+  if (bothPass && session.unlock) {
+    const u = session.unlock;
+    const failed = u.status === 'failed';
+    const unlocked = u.status === 'unlocked';
+
+    html += `<div class="card" style="border-color:var(--warning)">
+      <div class="card-header">
+        <span class="card-title" style="color:var(--warning)">🔓 Unlock Tomorrow Early</span>
+        <span id="unlock-attempts" style="font-size:12px;color:var(--text-dim)">${u.totalAttempts} / 5 attempts used</span>
+      </div>
+      <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px">Answer 3 advanced questions within 5 total attempts to access tomorrow's session now.</p>`;
+
+    if (unlocked) {
+      html += `<div style="text-align:center;padding:12px;color:var(--success);font-weight:700">✅ Unlocked! Next session loaded above.</div>`;
+    } else if (failed) {
+      html += `<div style="text-align:center;padding:12px;color:var(--error);font-weight:700">🔒 Attempts exhausted. Come back tomorrow.</div>`;
+    } else {
+      u.questions.forEach((uq, i) => {
+        const qdef = QUESTIONS.find(q=>q.id===uq.id);
+        if (!qdef) return;
+        const isDone = uq.status === 'pass';
+        const isLocked = failed && !isDone;
+        html += `<div class="q-card" style="border-color:rgba(245,158,11,0.3);${isLocked?'opacity:0.4;pointer-events:none':''}">
+          <div class="q-header">
+            <span class="q-label" style="color:var(--warning)">U${i+1} · ${CONCEPT_LABELS[qdef.concept]}</span>
+            ${isDone ? '<span class="pill pass">✓ Pass</span>' : ''}
+          </div>
+          <div class="q-prompt">${qdef.prompt}</div>
+          <textarea id="ta-u${i}" placeholder="Write your SQL here..." ${isDone||failed?'disabled':''}
+            onkeydown="handleTabKey(event)">${isDone ? qdef.solution : ''}</textarea>
+          ${!isDone && !failed ? `<button class="run-btn" style="background:var(--warning);color:#000" onclick="submitUnlock(${i})">▶ Run &amp; Check</button>` : ''}
+          <div class="feedback" id="fb-u${i}"></div>
+          <div class="result-preview" id="rp-u${i}"></div>
+        </div>`;
+      });
+    }
+
+    html += `</div>`;
+  }
+
+  document.getElementById('today-content').innerHTML = html;
+  updateHeader();
+  updateUnlockHeader();
+}
+
+function toggleCollapsible(id) {
+  const btn = document.querySelector(`[onclick="toggleCollapsible('${id}')"]`);
+  const content = document.getElementById(`coll-${id}`);
+  btn.classList.toggle('open');
+  content.classList.toggle('open');
+}
+
+function handleTabKey(e) {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const ta = e.target;
+    const start = ta.selectionStart;
+    const end = ta.selectionEnd;
+    ta.value = ta.value.substring(0, start) + '  ' + ta.value.substring(end);
+    ta.selectionStart = ta.selectionEnd = start + 2;
+  }
+}
+
+function submitAnswer(qKey) {
+  const session = progress.currentSession;
+  const qSlot = session[qKey];
+  const qdef = QUESTIONS.find(q=>q.id===qSlot.id);
+  if (!qdef) return;
+
+  const ta = document.getElementById(`ta-${qKey}`);
+  const fb = document.getElementById(`fb-${qKey}`);
+  const rp = document.getElementById(`rp-${qKey}`);
+  const sql = ta.value.trim();
+
+  if (!sql) {
+    fb.className = 'feedback fail show';
+    fb.innerHTML = 'Please enter a SQL query.';
+    return;
+  }
+
+  qSlot.attempts += 1;
+  const ev = evaluate(qdef, sql);
+
+  if (ev.pass) {
+    qSlot.status = 'pass';
+    ta.className = 'success';
+    ta.disabled = true;
+
+    fb.className = 'feedback pass show';
+    fb.innerHTML = `Correct! Your query returned ${ev.result.length} row(s).`;
+
+    rp.className = 'result-preview show';
+    rp.innerHTML = buildResultTable(ev.result);
+
+    if (qKey === 'q1') {
+      session.q2.status = 'pending';
+    }
+
+    if (session.q1.status==='pass' && session.q2.status==='pass') {
+      completeSession();
+    }
+
+    saveProgress(progress);
+    // re-render to update lock state / complete banner
+    setTimeout(() => renderToday(), 400);
+  } else {
+    ta.className = 'error';
+    fb.className = 'feedback fail show';
+    let msg = ev.hint || 'Not quite right.';
+    if (!ev.error && ev.result && ev.result.length > 0) {
+      fb.innerHTML = `<div>${msg}</div><div class="hint" style="margin-top:8px">Attempts: ${qSlot.attempts}</div>`;
+      rp.className = 'result-preview show';
+      rp.innerHTML = buildResultTable(ev.result);
+    } else {
+      fb.innerHTML = `<div>${msg}</div>`;
+      rp.className = 'result-preview';
+    }
+    saveProgress(progress);
+  }
+}
+
+// ─── RENDER PROGRESS TAB ─────────────────────────────────────────────────────
+
+function renderProgress() {
+  const level = progress.level;
+  const lvlName = CURRICULUM[level].name;
+  const concepts = CURRICULUM[level].concepts;
+  const sessionsNeeded = concepts.length;
+  const sessForThisLevel = progress.completedSessions % sessionsNeeded;
+  const pct = Math.round((sessForThisLevel / sessionsNeeded) * 100);
+
+  document.getElementById('prog-level').textContent = `${level} — ${lvlName}`;
+  document.getElementById('prog-streak').textContent = progress.streak;
+  document.getElementById('prog-sessions').textContent = progress.completedSessions;
+  document.getElementById('prog-pct').textContent = `${pct}%`;
+  document.getElementById('prog-bar').style.width = `${pct}%`;
+
+  // Concept list — all concepts across all levels
+  let html = '';
+  [1,2,3,4].forEach(lvl => {
+    CURRICULUM[lvl].concepts.forEach(concept => {
+      const conceptQs = QUESTIONS.filter(q=>q.concept===concept);
+      const done = conceptQs.some(q=>progress.completedQuestions.includes(q.id));
+      html += `<li class="concept-item">
+        <span>${CONCEPT_LABELS[concept]}</span>
+        <div style="display:flex;gap:8px;align-items:center">
+          <span class="concept-level-pill lvl-${lvl}">Lvl ${lvl}</span>
+          <span class="concept-check ${done?'done':'pending'}">${done?'✓':'○'}</span>
+        </div>
+      </li>`;
+    });
+  });
+  document.getElementById('concept-list').innerHTML = html;
+}
+
+// ─── RENDER SCHEMA TAB ───────────────────────────────────────────────────────
+
+function renderSchema() {
+  const tableNames = Object.keys(TABLES);
+  let html = '';
+  tableNames.forEach(tname => {
+    const rows = TABLES[tname];
+    const cols = Object.keys(rows[0]);
+    html += `<div class="table-name">${tname}</div>`;
+    html += '<div class="schema-table-wrap"><table class="schema-table"><thead><tr>';
+    cols.forEach(c => { html += `<th>${c}</th>`; });
+    html += '</tr></thead><tbody>';
+    rows.slice(0,3).forEach(row => {
+      html += '<tr>' + cols.map(c=>`<td>${row[c]}</td>`).join('') + '</tr>';
+    });
+    html += `</tbody></table></div>`;
+    if (rows.length > 3) {
+      html += `<div style="font-size:11px;color:var(--text-dim);margin-bottom:4px;text-align:right">+${rows.length-3} more rows</div>`;
+    }
+  });
+  document.getElementById('schema-content').innerHTML = html;
+}
+
+// ─── HEADER ──────────────────────────────────────────────────────────────────
+
+function updateHeader() {
+  document.getElementById('hdr-level').textContent = `Lvl ${progress.level} · ${CURRICULUM[progress.level].name}`;
+  document.getElementById('hdr-streak').textContent = `🔥 ${progress.streak}`;
+}
+
+// ─── TAB SWITCHING ───────────────────────────────────────────────────────────
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`tab-${name}`).classList.add('active');
+  document.getElementById(`nav-${name}`).classList.add('active');
+
+  if (name === 'progress') renderProgress();
+  if (name === 'schema') renderSchema();
+  if (name === 'today') renderToday();
+}
+
+// ─── RESET ───────────────────────────────────────────────────────────────────
+
+document.getElementById('reset-btn').addEventListener('click', () => {
+  if (window.confirm('Reset all progress? This cannot be undone.')) {
+    localStorage.removeItem(STORAGE_KEY);
+    progress = Object.assign({}, DEFAULT_PROGRESS);
+    renderToday();
+    renderProgress();
+    updateHeader();
+    switchTab('today');
+  }
+});
+
+// ─── INIT ────────────────────────────────────────────────────────────────────
+
+renderToday();
+
+// ─── SERVICE WORKER ──────────────────────────────────────────────────────────
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(err => {
+      console.warn('SW registration failed:', err);
+    });
+  });
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+{
+  "name": "SQL Skill Trainer",
+  "short_name": "SQL Trainer",
+  "description": "Daily SQL practice — beginner to advanced",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0f0f1a",
+  "theme_color": "#0f0f1a",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%230f0f1a'/><text y='68' x='50' text-anchor='middle' font-size='54' font-family='monospace' fill='%2300d4ff'>S</text></svg>",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
