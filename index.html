@@ -367,6 +367,7 @@
     .lvl-2 { background: rgba(0,212,255,0.15); color: var(--accent); }
     .lvl-3 { background: rgba(34,197,94,0.15); color: var(--success); }
     .lvl-4 { background: rgba(245,158,11,0.15); color: var(--warning); }
+    .lvl-5 { background: rgba(239,68,68,0.15);  color: #f87171; }
 
     .reset-btn {
       width: 100%;
@@ -417,6 +418,125 @@
       margin: 14px 0 6px;
     }
     .table-name:first-child { margin-top: 0; }
+
+    /* SQL editor overlay */
+    .editor-wrap {
+      position: relative;
+      margin-top: 10px;
+    }
+    .hl-layer {
+      position: absolute;
+      top: 0; left: 0; right: 0; bottom: 0;
+      pointer-events: none;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      padding: 12px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      background: var(--code-bg);
+      margin: 0;
+      overflow: hidden;
+      color: var(--code-text);
+    }
+    .editor-wrap textarea {
+      position: relative;
+      background: transparent;
+      color: transparent;
+      caret-color: var(--code-text);
+      z-index: 1;
+      margin-top: 0;
+      resize: none;
+    }
+    .editor-wrap textarea::placeholder { color: var(--text-dim); opacity: 1; }
+    .editor-wrap textarea:focus { border-color: var(--accent); }
+    .editor-wrap textarea:focus + .hl-layer,
+    .editor-wrap textarea.error + .hl-layer { border-color: transparent; }
+    .kw  { color: #79b8ff; }
+    .fn  { color: #b392f0; }
+    .str { color: #f6c90e; }
+    .num { color: #79dcaa; }
+
+    /* Wiki */
+    .ref-code {
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', monospace;
+      font-size: 12px;
+      color: var(--code-text);
+      overflow-x: auto;
+      white-space: pre;
+      margin: 0 0 8px;
+      line-height: 1.6;
+    }
+    .ref-tip {
+      background: rgba(0,212,255,0.06);
+      border: 1px solid rgba(0,212,255,0.18);
+      border-radius: 6px;
+      padding: 8px 12px;
+      font-size: 12px;
+      color: var(--text-dim);
+      line-height: 1.6;
+    }
+    .ref-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 10px 0 4px;
+    }
+    .ref-level-header {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin: 18px 0 8px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--border);
+    }
+    .ref-level-header:first-child { margin-top: 0; }
+    .wiki-search {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 14px;
+      outline: none;
+      margin-bottom: 14px;
+    }
+    .wiki-search:focus { border-color: var(--accent); }
+    .ref-card { margin-bottom: 6px; }
+    .ref-card.hidden { display: none; }
+    .ref-card-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+      padding: 4px 0 2px;
+    }
+    .ref-card-trigger:hover .ref-card-label { color: var(--accent); }
+    .ref-card-chevron {
+      font-size: 11px;
+      color: var(--text-dim);
+      transition: transform 0.2s;
+      flex-shrink: 0;
+      margin-left: 8px;
+    }
+    .ref-card.open .ref-card-chevron { transform: rotate(180deg); }
+    .ref-card-body {
+      display: none;
+      padding-top: 8px;
+    }
+    .ref-card.open .ref-card-body { display: block; }
 
     /* Misc */
     .section-title {
@@ -472,6 +592,16 @@
     <button class="reset-btn" id="reset-btn">Reset all progress</button>
   </div>
 
+  <!-- WIKI TAB -->
+  <div id="tab-wiki" class="tab">
+    <div id="wiki-content"></div>
+  </div>
+
+  <!-- PRACTICE TAB -->
+  <div id="tab-practice" class="tab">
+    <div id="practice-content"></div>
+  </div>
+
   <!-- SCHEMA TAB -->
   <div id="tab-schema" class="tab">
     <div class="card">
@@ -493,6 +623,14 @@
   <button class="nav-btn" id="nav-schema" onclick="switchTab('schema')">
     <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
     Schema
+  </button>
+  <button class="nav-btn" id="nav-practice" onclick="switchTab('practice')">
+    <svg viewBox="0 0 24 24"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+    Practice
+  </button>
+  <button class="nav-btn" id="nav-wiki" onclick="switchTab('wiki')">
+    <svg viewBox="0 0 24 24"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    Wiki
   </button>
 </nav>
 
@@ -535,16 +673,58 @@ const TABLES = {
     {payment_id:10, loan_id:6,  amount:335, month:'Feb', status:'missed'},
     {payment_id:11, loan_id:8,  amount:455, month:'Jan', status:'paid'},
     {payment_id:12, loan_id:10, amount:900, month:'Jan', status:'paid'}
+  ],
+  employees: [
+    {employee_id:1,  name:'Ahmad Razak', department:'Credit',     salary:65000, branch_id:1, hire_year:2019, manager_id:5},
+    {employee_id:2,  name:'Siti Noor',   department:'Operations', salary:58000, branch_id:1, hire_year:2020, manager_id:9},
+    {employee_id:3,  name:'James Lim',   department:'Risk',       salary:72000, branch_id:2, hire_year:2018, manager_id:7},
+    {employee_id:4,  name:'Priya Singh', department:'Credit',     salary:68000, branch_id:2, hire_year:2021, manager_id:5},
+    {employee_id:5,  name:'Wei Chen',    department:'IT',         salary:80000, branch_id:1, hire_year:2017, manager_id:null},
+    {employee_id:6,  name:'Nurul Ain',   department:'Operations', salary:55000, branch_id:3, hire_year:2022, manager_id:9},
+    {employee_id:7,  name:'David Tan',   department:'Risk',       salary:75000, branch_id:3, hire_year:2019, manager_id:null},
+    {employee_id:8,  name:'Sarah Kim',   department:'Credit',     salary:70000, branch_id:2, hire_year:2020, manager_id:5},
+    {employee_id:9,  name:'Raj Kumar',   department:'IT',         salary:82000, branch_id:1, hire_year:2016, manager_id:null},
+    {employee_id:10, name:'Lily Zhang',  department:'Operations', salary:60000, branch_id:3, hire_year:2021, manager_id:9}
+  ],
+  branches: [
+    {branch_id:1, name:'Central',     city:'Singapore',    country:'Singapore'},
+    {branch_id:2, name:'Bukit Timah', city:'Singapore',    country:'Singapore'},
+    {branch_id:3, name:'KLCC',        city:'Kuala Lumpur', country:'Malaysia'},
+    {branch_id:4, name:'Bangsar',     city:'Kuala Lumpur', country:'Malaysia'},
+    {branch_id:5, name:'Sudirman',    city:'Jakarta',      country:'Indonesia'}
+  ],
+  transactions: [
+    {transaction_id:1,  customer_id:101, amount:500,  type:'deposit',    month:'Jan', category:'salary'},
+    {transaction_id:2,  customer_id:101, amount:250,  type:'withdrawal', month:'Jan', category:'bills'},
+    {transaction_id:3,  customer_id:102, amount:1200, type:'deposit',    month:'Jan', category:'salary'},
+    {transaction_id:4,  customer_id:102, amount:800,  type:'withdrawal', month:'Jan', category:'rent'},
+    {transaction_id:5,  customer_id:103, amount:3000, type:'deposit',    month:'Feb', category:'salary'},
+    {transaction_id:6,  customer_id:103, amount:150,  type:'withdrawal', month:'Feb', category:'bills'},
+    {transaction_id:7,  customer_id:104, amount:5000, type:'deposit',    month:'Feb', category:'investment'},
+    {transaction_id:8,  customer_id:104, amount:200,  type:'withdrawal', month:'Feb', category:'bills'},
+    {transaction_id:9,  customer_id:101, amount:300,  type:'deposit',    month:'Mar', category:'bonus'},
+    {transaction_id:10, customer_id:105, amount:8000, type:'deposit',    month:'Mar', category:'salary'},
+    {transaction_id:11, customer_id:106, amount:100,  type:'withdrawal', month:'Mar', category:'bills'},
+    {transaction_id:12, customer_id:107, amount:2500, type:'deposit',    month:'Mar', category:'salary'}
+  ],
+  products: [
+    {product_id:1, name:'Personal Loan',  category:'consumer',  min_rate:5.0, max_rate:12.0, min_credit:600},
+    {product_id:2, name:'Home Loan',      category:'mortgage',  min_rate:3.5, max_rate:7.0,  min_credit:700},
+    {product_id:3, name:'Business Loan',  category:'sme',       min_rate:6.0, max_rate:15.0, min_credit:650},
+    {product_id:4, name:'Car Loan',       category:'consumer',  min_rate:4.5, max_rate:10.0, min_credit:620},
+    {product_id:5, name:'Education Loan', category:'consumer',  min_rate:4.0, max_rate:8.0,  min_credit:580},
+    {product_id:6, name:'Corporate Loan', category:'corporate', min_rate:4.0, max_rate:9.0,  min_credit:750}
   ]
 };
 
 // ─── CURRICULUM ──────────────────────────────────────────────────────────────
 
 const CURRICULUM = {
-  1: { name: 'Foundations',        concepts: ['select_basics','where_filter','where_operators','order_by','distinct','limit'] },
-  2: { name: 'Aggregation',        concepts: ['aggregate_functions','group_by','having','case_when'] },
-  3: { name: 'Joins & Subqueries', concepts: ['inner_join','left_join','subquery','in_exists'] },
-  4: { name: 'CTEs & Windows',     concepts: ['cte_basics','row_number','rank_dense_rank','running_total','lag_lead'] }
+  1: { name: 'Foundations',        concepts: ['select_basics','where_filter','where_operators','order_by','distinct','limit','between','like','is_null','aliases','wildcards_adv'] },
+  2: { name: 'Aggregation',        concepts: ['aggregate_functions','group_by','having','case_when','union','string_functions','date_functions'] },
+  3: { name: 'Joins & Subqueries', concepts: ['inner_join','left_join','subquery','in_exists','self_join','coalesce','right_join','cross_join','any_all'] },
+  4: { name: 'CTEs & Windows',     concepts: ['cte_basics','row_number','rank_dense_rank','running_total','lag_lead','multiple_cte','partition_agg','nullif_fn'] },
+  5: { name: 'DML & Data Changes', concepts: ['insert_rows','update_rows','delete_rows'] }
 };
 
 const CONCEPT_LABELS = {
@@ -553,7 +733,16 @@ const CONCEPT_LABELS = {
   aggregate_functions: 'Aggregates', group_by: 'GROUP BY', having: 'HAVING', case_when: 'CASE WHEN',
   inner_join: 'JOIN', left_join: 'LEFT JOIN', subquery: 'Subquery', in_exists: 'IN',
   cte_basics: 'CTE', row_number: 'ROW_NUMBER', rank_dense_rank: 'RANK',
-  running_total: 'Running Total', lag_lead: 'LAG / LEAD'
+  running_total: 'Running Total', lag_lead: 'LAG / LEAD',
+  between: 'BETWEEN', like: 'LIKE', is_null: 'IS NULL',
+  union: 'UNION', string_functions: 'String Functions',
+  self_join: 'Self JOIN', coalesce: 'COALESCE',
+  multiple_cte: 'Multiple CTEs', partition_agg: 'Window Aggregates',
+  aliases: 'Aliases (AS)', wildcards_adv: 'Wildcards',
+  date_functions: 'Date Grouping',
+  right_join: 'RIGHT JOIN', cross_join: 'CROSS JOIN', any_all: 'ANY / ALL',
+  nullif_fn: 'NULLIF',
+  insert_rows: 'INSERT INTO', update_rows: 'UPDATE', delete_rows: 'DELETE'
 };
 
 // ─── TIPS & SCENARIOS ────────────────────────────────────────────────────────
@@ -577,7 +766,26 @@ const TIPS = {
   row_number: "ROW_NUMBER() OVER (ORDER BY ...) assigns a unique sequential integer to each row. The ORDER BY inside OVER controls the ranking — it does not sort the output. Add an outer ORDER BY to sort results.",
   rank_dense_rank: "RANK() assigns the same rank to ties, then skips numbers (1,1,3). DENSE_RANK() also ties equal rows but never skips (1,1,2). ROW_NUMBER() always gives unique numbers even on ties. Pick based on how you want ties handled.",
   running_total: "SUM(col) OVER (ORDER BY ...) produces a running cumulative sum — each row shows the total of all rows up to and including that point. The ORDER BY inside OVER defines the accumulation order.",
-  lag_lead: "LAG(col) OVER (ORDER BY ...) fetches the previous row's value. LEAD(col) fetches the next row's value. Both return NULL at the boundary. Useful for period-over-period comparisons."
+  lag_lead: "LAG(col) OVER (ORDER BY ...) fetches the previous row's value. LEAD(col) fetches the next row's value. Both return NULL at the boundary. Useful for period-over-period comparisons.",
+  between: "BETWEEN is inclusive on both ends: WHERE amount BETWEEN 5000 AND 10000 includes 5000 and 10000. It's equivalent to amount >= 5000 AND amount <= 10000.",
+  like: "LIKE matches patterns: % matches any sequence of characters, _ matches exactly one character. Case sensitivity depends on the database — wrap in UPPER() to be safe.",
+  is_null: "NULL is not a value — it's the absence of one. You cannot compare it with = or !=. Use IS NULL to check for missing values, IS NOT NULL to exclude them.",
+  union: "UNION combines results from two SELECT statements and removes duplicates. UNION ALL keeps all rows including duplicates — it's faster when you know there are no duplicates or you want to keep them.",
+  string_functions: "UPPER(col) / LOWER(col) change case. LENGTH(col) returns character count. CONCAT(a, b) or a || b joins strings. TRIM(col) removes leading and trailing spaces.",
+  self_join: "A self-join joins a table to itself by aliasing it twice. Common for hierarchical data — finding a manager's name when both employees and managers are in the same table.",
+  coalesce: "COALESCE(a, b, c) returns the first non-NULL value in the list. Use it to substitute a default when a column might be NULL: COALESCE(discount, 0) gives 0 instead of NULL.",
+  multiple_cte: "You can chain multiple CTEs in one WITH clause, separated by commas. Later CTEs can reference earlier ones — this lets you build complex queries step by step with readable named stages.",
+  partition_agg: "Adding PARTITION BY to a window aggregate computes the aggregate per group but keeps all rows. Unlike GROUP BY (which collapses rows), PARTITION BY adds a group-level value to every row.",
+  aliases: "AS gives a column or table expression a temporary name. Column aliases work in ORDER BY but NOT in WHERE, GROUP BY, or HAVING (they are not computed yet at that stage). Table aliases shorten join syntax: e.name instead of employees.name.",
+  wildcards_adv: "% matches any number of characters (including zero). _ matches exactly one character. A leading % forces a full-table scan — anchor patterns at the start when possible. Case sensitivity depends on the database.",
+  date_functions: "Group rows by time period using the year or month column. For actual date columns, YEAR(col) / MONTH(col) extract parts. BETWEEN is the cleanest way to filter a date range.",
+  right_join: "RIGHT JOIN keeps ALL rows from the right (second) table. It is equivalent to swapping the tables and using LEFT JOIN — most developers prefer LEFT JOIN since it reads more naturally left-to-right.",
+  cross_join: "CROSS JOIN returns every row from the left table paired with every row from the right table. Result size = rows_a × rows_b. Always filter or aggregate — an unfiltered CROSS JOIN on large tables is a common performance disaster.",
+  any_all: "ANY returns true if the comparison holds for at least one value in the subquery. ALL requires the comparison to hold for every value. WHERE col = ANY (...) is equivalent to WHERE col IN (...).",
+  nullif_fn: "NULLIF(a, b) returns NULL if a equals b, otherwise returns a. Its most common use is preventing divide-by-zero: amount / NULLIF(months, 0) returns NULL instead of crashing when months is 0.",
+  insert_rows: "Always list column names in INSERT INTO — it protects against future schema changes. Omitted columns get their DEFAULT value or NULL. String values use single quotes.",
+  update_rows: "ALWAYS include a WHERE clause. Without it, every row in the table gets updated. Test your WHERE condition with a SELECT first to confirm exactly which rows will change.",
+  delete_rows: "ALWAYS include a WHERE clause. Without it, every row is deleted (table structure remains). Test with SELECT first and consider wrapping in a transaction so you can roll back if needed."
 };
 
 const SCENARIOS = {
@@ -599,7 +807,26 @@ const SCENARIOS = {
   row_number: "The credit team wants the top loan per customer ranked by amount. ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY amount DESC) numbers each customer's loans, then you filter WHERE row_num = 1.",
   rank_dense_rank: "A leaderboard needs to handle tied scores — two customers with the same credit score should both show rank 1. RANK() or DENSE_RANK() handles this; ROW_NUMBER() would arbitrarily break the tie.",
   running_total: "Finance wants a running portfolio total: each new loan row shows the cumulative amount lent up to that point. SUM(amount) OVER (ORDER BY loan_id) builds this without any self-join.",
-  lag_lead: "Collections wants to compare each month's payment to the previous month's to spot drops. LAG(amount) OVER (ORDER BY month) pulls the prior row's value into the current row for easy comparison."
+  lag_lead: "Collections wants to compare each month's payment to the previous month's to spot drops. LAG(amount) OVER (ORDER BY month) pulls the prior row's value into the current row for easy comparison.",
+  between: "Credit wants loans in a specific amount range for a mid-tier portfolio review. BETWEEN 5000 AND 15000 captures exactly that band without writing two separate conditions.",
+  like: "Customer search in the CRM needs to find all customers whose name starts with 'A'. LIKE 'A%' handles this without knowing the exact names in advance.",
+  is_null: "A data quality check needs to find employees with no manager assigned — meaning they are top-level managers. IS NULL identifies those missing relationships.",
+  union: "A report needs all cities where we have either customers OR branches, combined into one list. UNION merges the two sources and removes city duplicates automatically.",
+  string_functions: "A report needs customer names in uppercase for a formal document header, and you need to check the length of names to ensure they fit in a fixed-width field.",
+  self_join: "HR needs a report showing each employee alongside their direct manager's name. Both employees and managers live in the same employees table — a self-join surfaces the relationship.",
+  coalesce: "A payment dashboard shows each loan's last payment amount — but loans with no payments would show NULL. COALESCE replaces those NULLs with 0 so the dashboard displays cleanly.",
+  multiple_cte: "A risk report needs first the total loans per customer, then filters to high-borrowers, then joins to customers to get their names. Three named CTEs make each step clear and auditable.",
+  partition_agg: "Sales wants to see each employee's salary alongside the average salary for their department — on every row. PARTITION BY department computes the average per department without collapsing rows.",
+  aliases: "A finance report needs column headers that match the business glossary — 'loan_amount' not 'amount'. AS renames output columns so downstream tools and stakeholders see familiar labels.",
+  wildcards_adv: "Customer search in the CRM needs partial matching — finding customers whose city ends with 'pur' or whose name starts with a given letter. LIKE with wildcards enables flexible search without knowing exact values.",
+  date_functions: "Management wants loan volume trends by year to see portfolio growth. Grouping by start_year collapses individual loan rows into annual totals, revealing trends across the portfolio.",
+  right_join: "An operations review needs to identify which branches have no staff. RIGHT JOIN branches to employees, then filter WHERE employee IS NULL surfaces the unstaffed branches.",
+  cross_join: "Product operations needs a full eligibility matrix — every product paired with every branch. CROSS JOIN generates all combinations before filtering, giving the complete picture.",
+  any_all: "Credit scoring wants to flag customers above the bar set by any competitor segment. ANY against that segment's credit scores captures everyone who clears at least the lowest threshold.",
+  nullif_fn: "A per-loan monthly payment calculator divides amount by term_months. Some legacy rows have term_months=0, which would crash the division. NULLIF(term_months, 0) converts those zeros to NULL so the division returns NULL instead of an error.",
+  insert_rows: "Onboarding adds a new branch to the system. The INSERT INTO statement adds the record with all required fields, making it immediately available for joins and reports.",
+  update_rows: "A data quality fix corrects wrong credit scores imported from a bad CSV. UPDATE with a precise WHERE clause updates only the affected rows without touching anything else.",
+  delete_rows: "Purging expired test data before a system migration — DELETE removes the test records cleanly, scoped to exactly the right rows with a WHERE clause."
 };
 
 // ─── QUESTION BANK ───────────────────────────────────────────────────────────
@@ -905,8 +1132,717 @@ const QUESTIONS = [
       return sorted.map((l,i)=>({loan_id:l.loan_id,amount:l.amount,next_amount:i===sorted.length-1?null:sorted[i+1].amount}));
     })(),
     hint:"LEAD(amount) OVER (ORDER BY loan_id) — LEAD fetches the next row's value; the last row gets NULL."
-  }
+  },
+  {
+    id:'q36', level:1, concept:'between', type:'warmup', ordered:false,
+    prompt:'Find all loans where the amount is between 5000 and 10000 (inclusive). Return all columns.',
+    solution:'SELECT * FROM loans WHERE amount BETWEEN 5000 AND 10000',
+    expected: TABLES.loans.filter(r=>r.amount>=5000 && r.amount<=10000),
+    hint:'WHERE amount BETWEEN 5000 AND 10000 — BETWEEN is inclusive on both ends.'
+  },
+  {
+    id:'q37', level:1, concept:'between', type:'consolidate', ordered:false,
+    prompt:'Find customers with a credit_score between 680 and 750 (inclusive). Return all columns.',
+    solution:'SELECT * FROM customers WHERE credit_score BETWEEN 680 AND 750',
+    expected: TABLES.customers.filter(r=>r.credit_score>=680 && r.credit_score<=750),
+    hint:'WHERE credit_score BETWEEN 680 AND 750'
+  },
+  {
+    id:'q38', level:1, concept:'between', type:'stretch', ordered:false,
+    prompt:'Find all employees hired between 2018 and 2020 (inclusive) with a salary above 65000. Return all columns.',
+    solution:'SELECT * FROM employees WHERE hire_year BETWEEN 2018 AND 2020 AND salary > 65000',
+    expected: TABLES.employees.filter(r=>r.hire_year>=2018 && r.hire_year<=2020 && r.salary>65000),
+    hint:'Combine BETWEEN with AND for the salary condition.'
+  },
+  {
+    id:'q39', level:1, concept:'between', type:'challenge', ordered:true,
+    prompt:'Find all loans with an interest_rate between 5.0 and 7.0 (inclusive) AND amount above 5000, sorted by interest_rate ascending. Return loan_id, amount, interest_rate.',
+    solution:'SELECT loan_id, amount, interest_rate FROM loans WHERE interest_rate BETWEEN 5.0 AND 7.0 AND amount > 5000 ORDER BY interest_rate ASC',
+    expected: (function(){
+      return [...TABLES.loans].filter(r=>r.interest_rate>=5.0 && r.interest_rate<=7.0 && r.amount>5000)
+        .sort((a,b)=>a.interest_rate-b.interest_rate)
+        .map(r=>({loan_id:r.loan_id,amount:r.amount,interest_rate:r.interest_rate}));
+    })(),
+    hint:'BETWEEN 5.0 AND 7.0 for interest_rate, then AND amount > 5000, then ORDER BY interest_rate ASC.'
+  },
+  {
+    id:'q40', level:1, concept:'like', type:'warmup', ordered:false,
+    prompt:"Find all customers whose name starts with the letter 'A'. Return all columns.",
+    solution:"SELECT * FROM customers WHERE name LIKE 'A%'",
+    expected: TABLES.customers.filter(r=>r.name.startsWith('A')),
+    hint:"LIKE 'A%' — the % wildcard matches any sequence of characters after 'A'."
+  },
+  {
+    id:'q41', level:1, concept:'like', type:'consolidate', ordered:false,
+    prompt:"Find all customers whose city contains the word 'Kuala'. Return all columns.",
+    solution:"SELECT * FROM customers WHERE city LIKE '%Kuala%'",
+    expected: TABLES.customers.filter(r=>r.city.includes('Kuala')),
+    hint:"LIKE '%Kuala%' — % on both sides matches 'Kuala' anywhere in the string."
+  },
+  {
+    id:'q42', level:1, concept:'like', type:'stretch', ordered:false,
+    prompt:"Find all employees whose name ends with 'an' (e.g. 'David Tan'). Return name and department.",
+    solution:"SELECT name, department FROM employees WHERE name LIKE '%an'",
+    expected: TABLES.employees.filter(r=>r.name.endsWith('an')).map(r=>({name:r.name,department:r.department})),
+    hint:"LIKE '%an' — the % at the start means anything can come before 'an'."
+  },
+  {
+    id:'q43', level:1, concept:'like', type:'challenge', ordered:false,
+    prompt:"Find all products whose name contains 'Loan' and have a min_credit above 620. Return name, category, and min_credit.",
+    solution:"SELECT name, category, min_credit FROM products WHERE name LIKE '%Loan%' AND min_credit > 620",
+    expected: TABLES.products.filter(r=>r.name.includes('Loan') && r.min_credit>620).map(r=>({name:r.name,category:r.category,min_credit:r.min_credit})),
+    hint:"Combine LIKE '%Loan%' with AND min_credit > 620."
+  },
+  {
+    id:'q44', level:1, concept:'is_null', type:'warmup', ordered:false,
+    prompt:'Find all employees who have no manager (manager_id is NULL). Return all columns.',
+    solution:'SELECT * FROM employees WHERE manager_id IS NULL',
+    expected: TABLES.employees.filter(r=>r.manager_id===null),
+    hint:'Use IS NULL, not = NULL. NULL cannot be compared with equality operators.'
+  },
+  {
+    id:'q45', level:1, concept:'is_null', type:'consolidate', ordered:false,
+    prompt:'Find all employees who DO have a manager assigned. Return name and department.',
+    solution:'SELECT name, department FROM employees WHERE manager_id IS NOT NULL',
+    expected: TABLES.employees.filter(r=>r.manager_id!==null).map(r=>({name:r.name,department:r.department})),
+    hint:'IS NOT NULL to find rows where the column is not missing.'
+  },
+  {
+    id:'q46', level:1, concept:'is_null', type:'stretch', ordered:false,
+    prompt:'List all customers along with their loan count. Show customers with no loans as 0. Then filter to only customers where loan_count is 0 (no loans at all). Return name and loan_count.',
+    solution:'SELECT c.name, COUNT(l.loan_id) AS loan_count FROM customers c LEFT JOIN loans l ON c.customer_id = l.customer_id GROUP BY c.name HAVING COUNT(l.loan_id) = 0',
+    expected: (function(){
+      const loanMap={};
+      TABLES.loans.forEach(l=>loanMap[l.customer_id]=(loanMap[l.customer_id]||0)+1);
+      return TABLES.customers.filter(c=>!loanMap[c.customer_id]).map(c=>({name:c.name,loan_count:0}));
+    })(),
+    hint:'LEFT JOIN then HAVING COUNT(l.loan_id) = 0 to find customers with no loans.'
+  },
+  {
+    id:'q47', level:1, concept:'is_null', type:'challenge', ordered:false,
+    prompt:'Show each employee name and their manager name (as manager_name). If they have no manager, show NULL. Use a self-join on the employees table.',
+    solution:'SELECT e.name, m.name AS manager_name FROM employees e LEFT JOIN employees m ON e.manager_id = m.employee_id',
+    expected: (function(){
+      return TABLES.employees.map(e=>{
+        const mgr = TABLES.employees.find(m=>m.employee_id===e.manager_id);
+        return {name:e.name, manager_name: mgr ? mgr.name : null};
+      });
+    })(),
+    hint:'LEFT JOIN employees m ON e.manager_id = m.employee_id — the LEFT keeps employees with no manager.'
+  },
+  {
+    id:'q48', level:2, concept:'union', type:'warmup', ordered:false,
+    prompt:'Combine the list of cities from customers and cities from branches into one list (no duplicates). Return a single column named city.',
+    solution:'SELECT city FROM customers UNION SELECT city FROM branches',
+    expected: (function(){
+      const set = new Set([...TABLES.customers.map(r=>r.city), ...TABLES.branches.map(r=>r.city)]);
+      return [...set].map(city=>({city}));
+    })(),
+    hint:'UNION combines two SELECT results and removes duplicates. Both SELECTs must return the same number of columns.'
+  },
+  {
+    id:'q49', level:2, concept:'union', type:'consolidate', ordered:false,
+    prompt:'List all employee names from the Credit department UNION ALL employees from the Risk department. Return name and department. Keep duplicates if any.',
+    solution:"SELECT name, department FROM employees WHERE department = 'Credit' UNION ALL SELECT name, department FROM employees WHERE department = 'Risk'",
+    expected: (function(){
+      const credit = TABLES.employees.filter(r=>r.department==='Credit').map(r=>({name:r.name,department:r.department}));
+      const risk = TABLES.employees.filter(r=>r.department==='Risk').map(r=>({name:r.name,department:r.department}));
+      return [...credit,...risk];
+    })(),
+    hint:'UNION ALL keeps all rows including duplicates — faster than UNION when you know there are no duplicates.'
+  },
+  {
+    id:'q50', level:2, concept:'union', type:'stretch', ordered:false,
+    prompt:"Create a combined report: show 'loan' as type, loan_id as id, and amount from loans WHERE status='active', UNION ALL 'transaction' as type, transaction_id as id, and amount from transactions WHERE type='deposit'. Return type, id, amount.",
+    solution:"SELECT 'loan' AS type, loan_id AS id, amount FROM loans WHERE status='active' UNION ALL SELECT 'transaction', transaction_id, amount FROM transactions WHERE type='deposit'",
+    expected: (function(){
+      const loans = TABLES.loans.filter(r=>r.status==='active').map(r=>({type:'loan',id:r.loan_id,amount:r.amount}));
+      const txns = TABLES.transactions.filter(r=>r.type==='deposit').map(r=>({type:'transaction',id:r.transaction_id,amount:r.amount}));
+      return [...loans,...txns];
+    })(),
+    hint:"Literal string values like 'loan' can be selected as a column. UNION ALL to keep all rows."
+  },
+  {
+    id:'q51', level:2, concept:'union', type:'challenge', ordered:true,
+    prompt:"Show all unique cities from BOTH customers AND branches, sorted alphabetically. Return a single column named city.",
+    solution:'SELECT city FROM customers UNION SELECT city FROM branches ORDER BY city',
+    expected: (function(){
+      const set = new Set([...TABLES.customers.map(r=>r.city), ...TABLES.branches.map(r=>r.city)]);
+      return [...set].sort().map(city=>({city}));
+    })(),
+    hint:'UNION deduplicates. Add ORDER BY city at the very end (after the second SELECT) to sort the combined result.'
+  },
+  {
+    id:'q52', level:2, concept:'string_functions', type:'warmup', ordered:false,
+    prompt:'Show each customer name in UPPERCASE. Return a single column named upper_name.',
+    solution:'SELECT UPPER(name) AS upper_name FROM customers',
+    expected: TABLES.customers.map(r=>({upper_name:r.name.toUpperCase()})),
+    hint:'UPPER(name) converts the value to uppercase. Alias it with AS upper_name.'
+  },
+  {
+    id:'q53', level:2, concept:'string_functions', type:'consolidate', ordered:false,
+    prompt:'Show each customer name and the length of their name as name_length. Return name and name_length.',
+    solution:'SELECT name, LENGTH(name) AS name_length FROM customers',
+    expected: TABLES.customers.map(r=>({name:r.name,name_length:r.name.length})),
+    hint:'LENGTH(name) returns the number of characters in the string.'
+  },
+  {
+    id:'q54', level:2, concept:'string_functions', type:'stretch', ordered:false,
+    prompt:"Show each customer's name in lowercase and their city in uppercase. Return lower_name and upper_city.",
+    solution:'SELECT LOWER(name) AS lower_name, UPPER(city) AS upper_city FROM customers',
+    expected: TABLES.customers.map(r=>({lower_name:r.name.toLowerCase(),upper_city:r.city.toUpperCase()})),
+    hint:'LOWER() and UPPER() can be used together in the same SELECT.'
+  },
+  {
+    id:'q55', level:2, concept:'string_functions', type:'challenge', ordered:true,
+    prompt:'Find all customers whose name, when uppercased, starts with the letter A or B. Return name and LENGTH(name) as name_length, sorted by name_length descending.',
+    solution:"SELECT name, LENGTH(name) AS name_length FROM customers WHERE UPPER(name) LIKE 'A%' OR UPPER(name) LIKE 'B%' ORDER BY name_length DESC",
+    expected: (function(){
+      return TABLES.customers
+        .filter(r=>r.name.toUpperCase().startsWith('A')||r.name.toUpperCase().startsWith('B'))
+        .map(r=>({name:r.name,name_length:r.name.length}))
+        .sort((a,b)=>b.name_length-a.name_length);
+    })(),
+    hint:"UPPER(name) LIKE 'A%' OR UPPER(name) LIKE 'B%' — apply functions inside WHERE conditions too."
+  },
+  {
+    id:'q56', level:3, concept:'self_join', type:'warmup', ordered:false,
+    prompt:'Show each employee name and their manager name (manager_name). Exclude employees with no manager.',
+    solution:'SELECT e.name, m.name AS manager_name FROM employees e JOIN employees m ON e.manager_id = m.employee_id',
+    expected: (function(){
+      return TABLES.employees
+        .filter(e=>e.manager_id!==null)
+        .map(e=>{
+          const mgr=TABLES.employees.find(m=>m.employee_id===e.manager_id);
+          return {name:e.name,manager_name:mgr.name};
+        });
+    })(),
+    hint:'Alias the employees table twice: e for employees and m for managers. JOIN on manager_id = employee_id.'
+  },
+  {
+    id:'q57', level:3, concept:'self_join', type:'consolidate', ordered:false,
+    prompt:'For each employee who has a manager, show the employee name, their salary, and their manager name and manager salary (as manager_salary). Return employee_name, employee_salary, manager_name, manager_salary.',
+    solution:'SELECT e.name AS employee_name, e.salary AS employee_salary, m.name AS manager_name, m.salary AS manager_salary FROM employees e JOIN employees m ON e.manager_id = m.employee_id',
+    expected: (function(){
+      return TABLES.employees
+        .filter(e=>e.manager_id!==null)
+        .map(e=>{
+          const mgr=TABLES.employees.find(m=>m.employee_id===e.manager_id);
+          return {employee_name:e.name,employee_salary:e.salary,manager_name:mgr.name,manager_salary:mgr.salary};
+        });
+    })(),
+    hint:'Use e. prefix for employee columns and m. prefix for manager columns. Give each a meaningful alias.'
+  },
+  {
+    id:'q58', level:3, concept:'self_join', type:'stretch', ordered:false,
+    prompt:'Find all employees who earn MORE than their manager. Show employee name, employee salary, manager name, and manager salary.',
+    solution:'SELECT e.name AS employee_name, e.salary AS employee_salary, m.name AS manager_name, m.salary AS manager_salary FROM employees e JOIN employees m ON e.manager_id = m.employee_id WHERE e.salary > m.salary',
+    expected: (function(){
+      return TABLES.employees
+        .filter(e=>e.manager_id!==null)
+        .map(e=>{
+          const mgr=TABLES.employees.find(m=>m.employee_id===e.manager_id);
+          return {employee_name:e.name,employee_salary:e.salary,manager_name:mgr.name,manager_salary:mgr.salary,_pass:e.salary>mgr.salary};
+        })
+        .filter(r=>r._pass)
+        .map(({_pass,...rest})=>rest);
+    })(),
+    hint:'After the self-join, add WHERE e.salary > m.salary to filter for employees earning more than their manager.'
+  },
+  {
+    id:'q59', level:3, concept:'self_join', type:'challenge', ordered:true,
+    prompt:"Show each employee, their department, their manager name (or 'No Manager' if none), sorted by department then employee name.",
+    solution:"SELECT e.name, e.department, COALESCE(m.name, 'No Manager') AS manager_name FROM employees e LEFT JOIN employees m ON e.manager_id = m.employee_id ORDER BY e.department, e.name",
+    expected: (function(){
+      return TABLES.employees
+        .map(e=>{
+          const mgr=TABLES.employees.find(m=>m.employee_id===e.manager_id);
+          return {name:e.name,department:e.department,manager_name:mgr?mgr.name:'No Manager'};
+        })
+        .sort((a,b)=>a.department.localeCompare(b.department)||a.name.localeCompare(b.name));
+    })(),
+    hint:"LEFT JOIN to keep all employees. COALESCE(m.name, 'No Manager') replaces NULL with the fallback text."
+  },
+  {
+    id:'q60', level:3, concept:'coalesce', type:'warmup', ordered:false,
+    prompt:"Show each employee's name and their manager_id. If manager_id is NULL, show 0 instead. Return name and manager_id.",
+    solution:'SELECT name, COALESCE(manager_id, 0) AS manager_id FROM employees',
+    expected: TABLES.employees.map(r=>({name:r.name,manager_id:r.manager_id===null?0:r.manager_id})),
+    hint:'COALESCE(manager_id, 0) returns manager_id if it is not NULL, otherwise returns 0.'
+  },
+  {
+    id:'q61', level:3, concept:'coalesce', type:'consolidate', ordered:false,
+    prompt:"For each loan, show the loan_id and the total payments made (as total_paid). Loans with no payments should show 0, not NULL. Use a LEFT JOIN and COALESCE.",
+    solution:'SELECT l.loan_id, COALESCE(SUM(p.amount), 0) AS total_paid FROM loans l LEFT JOIN payments p ON l.loan_id = p.loan_id GROUP BY l.loan_id',
+    expected: (function(){
+      const payMap={};
+      TABLES.payments.forEach(p=>payMap[p.loan_id]=(payMap[p.loan_id]||0)+p.amount);
+      return TABLES.loans.map(l=>({loan_id:l.loan_id,total_paid:payMap[l.loan_id]||0}));
+    })(),
+    hint:'LEFT JOIN then GROUP BY. COALESCE(SUM(p.amount), 0) converts NULL (no payments) to 0.'
+  },
+  {
+    id:'q62', level:3, concept:'coalesce', type:'stretch', ordered:false,
+    prompt:"Show each customer name and their total transaction amount as total_txn. Customers with no transactions should show 0. Return name and total_txn.",
+    solution:'SELECT c.name, COALESCE(SUM(t.amount), 0) AS total_txn FROM customers c LEFT JOIN transactions t ON c.customer_id = t.customer_id GROUP BY c.name',
+    expected: (function(){
+      const txMap={};
+      TABLES.transactions.forEach(t=>txMap[t.customer_id]=(txMap[t.customer_id]||0)+t.amount);
+      return TABLES.customers.map(c=>({name:c.name,total_txn:txMap[c.customer_id]||0}));
+    })(),
+    hint:'LEFT JOIN on customer_id, then COALESCE(SUM(t.amount), 0) and GROUP BY c.name.'
+  },
+  {
+    id:'q63', level:3, concept:'coalesce', type:'challenge', ordered:false,
+    prompt:"Show each employee's name and salary. If their salary is above 70000, label them 'Senior'; if between 60000 and 70000 label 'Mid'; otherwise 'Junior'. Use COALESCE as a fallback: the salary label should default to 'Unknown' if somehow NULL. Return name and grade.",
+    solution:"SELECT name, COALESCE(CASE WHEN salary > 70000 THEN 'Senior' WHEN salary BETWEEN 60000 AND 70000 THEN 'Mid' ELSE 'Junior' END, 'Unknown') AS grade FROM employees",
+    expected: TABLES.employees.map(r=>({name:r.name,grade:r.salary>70000?'Senior':r.salary>=60000?'Mid':'Junior'})),
+    hint:"Nest CASE WHEN inside COALESCE: COALESCE(CASE WHEN ... END, 'Unknown'). The CASE result won't be NULL here, but the pattern is good practice."
+  },
+  {
+    id:'q64', level:4, concept:'multiple_cte', type:'warmup', ordered:false,
+    prompt:"Write two CTEs: <strong>active</strong> (active loans) and <strong>high_value</strong> (loans with amount > 10000). Then SELECT * FROM high_value.",
+    solution:"WITH active AS (SELECT * FROM loans WHERE status = 'active'), high_value AS (SELECT * FROM active WHERE amount > 10000) SELECT * FROM high_value",
+    expected: TABLES.loans.filter(r=>r.status==='active' && r.amount>10000),
+    hint:"WITH cte1 AS (...), cte2 AS (...) SELECT ... — separate CTEs with a comma. Later CTEs can reference earlier ones."
+  },
+  {
+    id:'q65', level:4, concept:'multiple_cte', type:'consolidate', ordered:false,
+    prompt:"Write a CTE <strong>loan_totals</strong> that sums loan amounts per customer_id. Write a second CTE <strong>high_borrowers</strong> that filters loan_totals to total_amount > 15000. Then SELECT customer_id and total_amount FROM high_borrowers.",
+    solution:"WITH loan_totals AS (SELECT customer_id, SUM(amount) AS total_amount FROM loans GROUP BY customer_id), high_borrowers AS (SELECT * FROM loan_totals WHERE total_amount > 15000) SELECT customer_id, total_amount FROM high_borrowers",
+    expected: (function(){
+      const map={};
+      TABLES.loans.forEach(l=>map[l.customer_id]=(map[l.customer_id]||0)+l.amount);
+      return Object.entries(map).filter(([,v])=>v>15000).map(([id,tot])=>({customer_id:Number(id),total_amount:tot}));
+    })(),
+    hint:"The second CTE can reference the first. SELECT ... FROM second_cte at the end."
+  },
+  {
+    id:'q66', level:4, concept:'multiple_cte', type:'stretch', ordered:false,
+    prompt:"CTE 1 <strong>dept_avg</strong>: average salary per department from employees. CTE 2 <strong>above_avg</strong>: employees earning more than their department average (join employees to dept_avg on department). Return employee name, department, salary, and dept_avg_salary.",
+    solution:"WITH dept_avg AS (SELECT department, AVG(salary) AS dept_avg_salary FROM employees GROUP BY department), above_avg AS (SELECT e.name, e.department, e.salary, d.dept_avg_salary FROM employees e JOIN dept_avg d ON e.department = d.department WHERE e.salary > d.dept_avg_salary) SELECT * FROM above_avg",
+    expected: (function(){
+      const depts={};
+      TABLES.employees.forEach(e=>{
+        if(!depts[e.department]) depts[e.department]={sum:0,count:0};
+        depts[e.department].sum+=e.salary;
+        depts[e.department].count+=1;
+      });
+      const avgMap={};
+      Object.entries(depts).forEach(([d,v])=>avgMap[d]=v.sum/v.count);
+      return TABLES.employees
+        .filter(e=>e.salary>avgMap[e.department])
+        .map(e=>({name:e.name,department:e.department,salary:e.salary,dept_avg_salary:avgMap[e.department]}));
+    })(),
+    hint:"dept_avg groups by department. above_avg joins employees to dept_avg and filters WHERE e.salary > d.dept_avg_salary."
+  },
+  {
+    id:'q67', level:4, concept:'multiple_cte', type:'challenge', ordered:false,
+    prompt:"Three CTEs: <strong>loan_totals</strong> (total loan amount per customer_id), <strong>txn_totals</strong> (total transaction amount per customer_id from transactions), <strong>combined</strong> (join loan_totals and txn_totals on customer_id, keeping all customers). Final SELECT: customer_id, total_loans, total_txn from combined.",
+    solution:"WITH loan_totals AS (SELECT customer_id, SUM(amount) AS total_loans FROM loans GROUP BY customer_id), txn_totals AS (SELECT customer_id, SUM(amount) AS total_txn FROM transactions GROUP BY customer_id), combined AS (SELECT l.customer_id, l.total_loans, COALESCE(t.total_txn, 0) AS total_txn FROM loan_totals l LEFT JOIN txn_totals t ON l.customer_id = t.customer_id) SELECT * FROM combined",
+    expected: (function(){
+      const lmap={},tmap={};
+      TABLES.loans.forEach(l=>lmap[l.customer_id]=(lmap[l.customer_id]||0)+l.amount);
+      TABLES.transactions.forEach(t=>tmap[t.customer_id]=(tmap[t.customer_id]||0)+t.amount);
+      return Object.entries(lmap).map(([id,tot])=>({customer_id:Number(id),total_loans:tot,total_txn:tmap[Number(id)]||0}));
+    })(),
+    hint:"Three CTEs separated by commas. The third references the first two. Use LEFT JOIN so customers with no transactions still appear."
+  },
+  {
+    id:'q68', level:4, concept:'partition_agg', type:'warmup', ordered:false,
+    prompt:"For each employee, show name, department, salary, and the average salary of their department as dept_avg. Keep all rows (do not collapse).",
+    solution:"SELECT name, department, salary, AVG(salary) OVER (PARTITION BY department) AS dept_avg FROM employees",
+    expected: (function(){
+      const depts={};
+      TABLES.employees.forEach(e=>{
+        if(!depts[e.department]) depts[e.department]={sum:0,count:0};
+        depts[e.department].sum+=e.salary;
+        depts[e.department].count+=1;
+      });
+      const avgMap={};
+      Object.entries(depts).forEach(([d,v])=>avgMap[d]=Math.round(v.sum/v.count*10000)/10000);
+      return TABLES.employees.map(e=>({name:e.name,department:e.department,salary:e.salary,dept_avg:avgMap[e.department]}));
+    })(),
+    hint:"AVG(salary) OVER (PARTITION BY department) — PARTITION BY resets the aggregate for each department without collapsing rows."
+  },
+  {
+    id:'q69', level:4, concept:'partition_agg', type:'consolidate', ordered:false,
+    prompt:"Show each loan's loan_id, status, amount, and the total loan amount for that status group (named status_total). Use a window aggregate.",
+    solution:"SELECT loan_id, status, amount, SUM(amount) OVER (PARTITION BY status) AS status_total FROM loans",
+    expected: (function(){
+      const statusMap={};
+      TABLES.loans.forEach(l=>statusMap[l.status]=(statusMap[l.status]||0)+l.amount);
+      return TABLES.loans.map(l=>({loan_id:l.loan_id,status:l.status,amount:l.amount,status_total:statusMap[l.status]}));
+    })(),
+    hint:"SUM(amount) OVER (PARTITION BY status) — every loan row gets the total for its status group appended as a column."
+  },
+  {
+    id:'q70', level:4, concept:'partition_agg', type:'stretch', ordered:false,
+    prompt:"For each loan, show loan_id, customer_id, amount, and: (1) the customer's total loan amount as customer_total, (2) the max loan amount across ALL loans as overall_max.",
+    solution:"SELECT loan_id, customer_id, amount, SUM(amount) OVER (PARTITION BY customer_id) AS customer_total, MAX(amount) OVER () AS overall_max FROM loans",
+    expected: (function(){
+      const custMap={};
+      TABLES.loans.forEach(l=>custMap[l.customer_id]=(custMap[l.customer_id]||0)+l.amount);
+      const overall_max=Math.max(...TABLES.loans.map(l=>l.amount));
+      return TABLES.loans.map(l=>({loan_id:l.loan_id,customer_id:l.customer_id,amount:l.amount,customer_total:custMap[l.customer_id],overall_max}));
+    })(),
+    hint:"Two window functions: SUM OVER (PARTITION BY customer_id) for per-customer total, MAX OVER () with empty OVER for the global max across all rows."
+  },
+  {
+    id:'q71', level:4, concept:'partition_agg', type:'challenge', ordered:false,
+    prompt:"Show each employee's name, department, salary, department average salary (dept_avg), and a column 'vs_avg' which is salary minus dept_avg (how much they earn above or below their department average). Round vs_avg to 2 decimal places.",
+    solution:"SELECT name, department, salary, ROUND(AVG(salary) OVER (PARTITION BY department), 2) AS dept_avg, ROUND(salary - AVG(salary) OVER (PARTITION BY department), 2) AS vs_avg FROM employees",
+    expected: (function(){
+      const depts={};
+      TABLES.employees.forEach(e=>{
+        if(!depts[e.department]) depts[e.department]={sum:0,count:0};
+        depts[e.department].sum+=e.salary;
+        depts[e.department].count+=1;
+      });
+      const avgMap={};
+      Object.entries(depts).forEach(([d,v])=>avgMap[d]=Math.round(v.sum/v.count*100)/100);
+      return TABLES.employees.map(e=>({
+        name:e.name,
+        department:e.department,
+        salary:e.salary,
+        dept_avg:avgMap[e.department],
+        vs_avg:Math.round((e.salary-avgMap[e.department])*100)/100
+      }));
+    })(),
+    hint:"Use AVG(salary) OVER (PARTITION BY department) twice — once for dept_avg, once inside the subtraction for vs_avg. Wrap both in ROUND(..., 2)."
+  },
+  {id:'qw_select',   level:1, concept:'select_basics',      type:'warmup', ordered:false,
+    prompt:'Return all rows and columns from the <strong>customers</strong> table.',
+    solution:'SELECT * FROM customers',
+    expected:TABLES.customers,
+    hint:'SELECT * FROM customers — * means all columns.'},
+  {id:'qw_where',    level:1, concept:'where_filter',        type:'warmup', ordered:false,
+    prompt:"Find all customers from <strong>Singapore</strong>. Return all columns.",
+    solution:"SELECT * FROM customers WHERE city = 'Singapore'",
+    expected:TABLES.customers.filter(r=>r.city==='Singapore'),
+    hint:"WHERE city = 'Singapore'"},
+  {id:'qw_whop',     level:1, concept:'where_operators',     type:'warmup', ordered:false,
+    prompt:"Show all loans that are either 'defaulted' OR 'closed'.",
+    solution:"SELECT * FROM loans WHERE status = 'defaulted' OR status = 'closed'",
+    expected:TABLES.loans.filter(r=>r.status==='defaulted'||r.status==='closed'),
+    hint:"Use OR: WHERE status = 'defaulted' OR status = 'closed'"},
+  {id:'qw_order',    level:1, concept:'order_by',            type:'warmup', ordered:true,
+    prompt:'List all payments ordered by amount from lowest to highest. Return all columns.',
+    solution:'SELECT * FROM payments ORDER BY amount ASC',
+    expected:[...TABLES.payments].sort((a,b)=>a.amount-b.amount),
+    hint:'ORDER BY amount ASC'},
+  {id:'qw_distinct', level:1, concept:'distinct',            type:'warmup', ordered:false,
+    prompt:'What unique customer segments exist? Return one column: segment.',
+    solution:'SELECT DISTINCT segment FROM customers',
+    expected:[{segment:'retail'},{segment:'sme'},{segment:'corporate'}],
+    hint:'SELECT DISTINCT segment FROM customers'},
+  {id:'qw_limit',    level:1, concept:'limit',               type:'warmup', ordered:true,
+    prompt:'Show the 5 most recently started loans (highest start_year first). Return all columns.',
+    solution:'SELECT * FROM loans ORDER BY start_year DESC LIMIT 5',
+    expected:[...TABLES.loans].sort((a,b)=>b.start_year-a.start_year).slice(0,5),
+    hint:'ORDER BY start_year DESC LIMIT 5'},
+  {id:'qw_agg',      level:2, concept:'aggregate_functions', type:'warmup', ordered:false,
+    prompt:'How many rows are in the payments table? Return a single number.',
+    solution:'SELECT COUNT(*) FROM payments',
+    expected:[{'COUNT(*)':12}],
+    hint:'SELECT COUNT(*) FROM payments'},
+  {id:'qw_grp',      level:2, concept:'group_by',            type:'warmup', ordered:false,
+    prompt:'Count customers per city. Return city and customer_count.',
+    solution:'SELECT city, COUNT(*) AS customer_count FROM customers GROUP BY city',
+    expected:(function(){const m={};TABLES.customers.forEach(c=>m[c.city]=(m[c.city]||0)+1);return Object.entries(m).map(([city,customer_count])=>({city,customer_count}));})(),
+    hint:'GROUP BY city, then COUNT(*) AS customer_count'},
+  {id:'qw_hav',      level:2, concept:'having',              type:'warmup', ordered:false,
+    prompt:'Find loan statuses that have at least 2 loans. Return status and loan_count.',
+    solution:'SELECT status, COUNT(*) AS loan_count FROM loans GROUP BY status HAVING COUNT(*) >= 2',
+    expected:(function(){const m={};TABLES.loans.forEach(l=>m[l.status]=(m[l.status]||0)+1);return Object.entries(m).filter(([,v])=>v>=2).map(([status,loan_count])=>({status,loan_count}));})(),
+    hint:'HAVING COUNT(*) >= 2 after GROUP BY status'},
+  {id:'qw_case',     level:2, concept:'case_when',           type:'warmup', ordered:false,
+    prompt:"Label each customer 'Premium' if credit_score >= 750, else 'Standard'. Return name and tier.",
+    solution:"SELECT name, CASE WHEN credit_score >= 750 THEN 'Premium' ELSE 'Standard' END AS tier FROM customers",
+    expected:TABLES.customers.map(r=>({name:r.name,tier:r.credit_score>=750?'Premium':'Standard'})),
+    hint:"CASE WHEN credit_score >= 750 THEN 'Premium' ELSE 'Standard' END AS tier"},
+  {id:'qw_join',     level:3, concept:'inner_join',          type:'warmup', ordered:false,
+    prompt:'Show each payment with the loan status. Return payment_id, amount (from payments), and status (from loans).',
+    solution:'SELECT p.payment_id, p.amount, l.status FROM payments p JOIN loans l ON p.loan_id = l.loan_id',
+    expected:TABLES.payments.map(p=>{const l=TABLES.loans.find(l=>l.loan_id===p.loan_id);return {payment_id:p.payment_id,amount:p.amount,status:l.status};}),
+    hint:'JOIN loans l ON p.loan_id = l.loan_id, then SELECT from both aliases'},
+  {id:'qw_ljoin',    level:3, concept:'left_join',           type:'warmup', ordered:false,
+    prompt:'List all loans with a count of their payments (named payment_count). Include loans with 0 payments.',
+    solution:'SELECT l.loan_id, COUNT(p.payment_id) AS payment_count FROM loans l LEFT JOIN payments p ON l.loan_id = p.loan_id GROUP BY l.loan_id',
+    expected:(function(){const m={};TABLES.payments.forEach(p=>m[p.loan_id]=(m[p.loan_id]||0)+1);return TABLES.loans.map(l=>({loan_id:l.loan_id,payment_count:m[l.loan_id]||0}));})(),
+    hint:'LEFT JOIN keeps all loans. COUNT(p.payment_id) gives 0 when no payments exist.'},
+  {id:'qw_sub',      level:3, concept:'subquery',            type:'warmup', ordered:false,
+    prompt:'Find all customers whose credit_score is above the average credit_score. Return all columns.',
+    solution:'SELECT * FROM customers WHERE credit_score > (SELECT AVG(credit_score) FROM customers)',
+    expected:TABLES.customers.filter(r=>r.credit_score>711.25),
+    hint:'The subquery (SELECT AVG(credit_score) FROM customers) computes the threshold inline.'},
+  {id:'qw_in',       level:3, concept:'in_exists',           type:'warmup', ordered:false,
+    prompt:"Find customers who have at least one loan. Use IN with a subquery. Return customer name.",
+    solution:'SELECT name FROM customers WHERE customer_id IN (SELECT customer_id FROM loans)',
+    expected:(function(){const ids=new Set(TABLES.loans.map(l=>l.customer_id));return TABLES.customers.filter(c=>ids.has(c.customer_id)).map(c=>({name:c.name}));})(),
+    hint:'WHERE customer_id IN (SELECT customer_id FROM loans)'},
+  {id:'qw_cte',      level:4, concept:'cte_basics',          type:'warmup', ordered:false,
+    prompt:'Write a CTE named <strong>high_value</strong> selecting loans with amount > 10000. Then SELECT * FROM high_value.',
+    solution:"WITH high_value AS (SELECT * FROM loans WHERE amount > 10000) SELECT * FROM high_value",
+    expected:TABLES.loans.filter(r=>r.amount>10000),
+    hint:"WITH high_value AS (SELECT * FROM loans WHERE amount > 10000) SELECT * FROM high_value"},
+  {id:'qw_rn',       level:4, concept:'row_number',          type:'warmup', ordered:false,
+    prompt:'Number each customer 1–N ordered by name alphabetically. Return name and row_num.',
+    solution:'SELECT name, ROW_NUMBER() OVER (ORDER BY name ASC) AS row_num FROM customers',
+    expected:(function(){return [...TABLES.customers].sort((a,b)=>a.name.localeCompare(b.name)).map((c,i)=>({name:c.name,row_num:i+1}));})(),
+    hint:'ROW_NUMBER() OVER (ORDER BY name ASC) AS row_num'},
+  {id:'qw_rank',     level:4, concept:'rank_dense_rank',     type:'warmup', ordered:false,
+    prompt:'Rank loans by amount (largest first) using DENSE_RANK. Return loan_id, amount, and drnk.',
+    solution:'SELECT loan_id, amount, DENSE_RANK() OVER (ORDER BY amount DESC) AS drnk FROM loans',
+    expected:(function(){const sorted=[...TABLES.loans].sort((a,b)=>b.amount-a.amount);let r=0,prev=null;return sorted.map((l,i)=>{if(l.amount!==prev){r=i+1;prev=l.amount;}return {loan_id:l.loan_id,amount:l.amount,drnk:r};});})(),
+    hint:'DENSE_RANK() OVER (ORDER BY amount DESC) AS drnk'},
+  {id:'qw_run',      level:4, concept:'running_total',       type:'warmup', ordered:false,
+    prompt:'Show payment_id, amount, and a running total (named running_total) of amounts ordered by payment_id.',
+    solution:'SELECT payment_id, amount, SUM(amount) OVER (ORDER BY payment_id) AS running_total FROM payments',
+    expected:(function(){const sorted=[...TABLES.payments].sort((a,b)=>a.payment_id-b.payment_id);let s=0;return sorted.map(p=>{s+=p.amount;return {payment_id:p.payment_id,amount:p.amount,running_total:s};});})(),
+    hint:'SUM(amount) OVER (ORDER BY payment_id) AS running_total'},
+  {id:'qw_lag',      level:4, concept:'lag_lead',            type:'warmup', ordered:false,
+    prompt:'For each loan ordered by loan_id, show loan_id, amount, and the NEXT loan amount as next_amount.',
+    solution:'SELECT loan_id, amount, LEAD(amount) OVER (ORDER BY loan_id) AS next_amount FROM loans',
+    expected:(function(){const sorted=[...TABLES.loans].sort((a,b)=>a.loan_id-b.loan_id);return sorted.map((l,i)=>({loan_id:l.loan_id,amount:l.amount,next_amount:i===sorted.length-1?null:sorted[i+1].amount}));})(),
+    hint:'LEAD(amount) OVER (ORDER BY loan_id) AS next_amount'},
+
+  // ── ALIASES ────────────────────────────────────────────────────────────────
+  {id:'q_al1', level:1, concept:'aliases', type:'warmup', ordered:false,
+    prompt:'Show <strong>loan_id</strong> renamed as <em>id</em>, <strong>amount</strong> renamed as <em>loan_amount</em>, and <strong>status</strong> from the loans table. Return only loans with loan_id ≤ 3.',
+    solution:'SELECT loan_id AS id, amount AS loan_amount, status FROM loans WHERE loan_id <= 3',
+    expected: TABLES.loans.filter(r=>r.loan_id<=3).map(r=>({id:r.loan_id, loan_amount:r.amount, status:r.status})),
+    hint:'SELECT loan_id AS id, amount AS loan_amount, status FROM loans WHERE loan_id <= 3'},
+  {id:'q_al2', level:1, concept:'aliases', type:'consolidate', ordered:false,
+    prompt:'Return <strong>name</strong> renamed as <em>customer_name</em> and <strong>city</strong> renamed as <em>location</em> from the customers table. Use a table alias <em>c</em> for customers.',
+    solution:'SELECT c.name AS customer_name, c.city AS location FROM customers c',
+    expected: TABLES.customers.map(r=>({customer_name:r.name, location:r.city})),
+    hint:'SELECT c.name AS customer_name, c.city AS location FROM customers c'},
+  {id:'q_al3', level:1, concept:'aliases', type:'stretch', ordered:false,
+    prompt:'For each loan, show <strong>loan_id</strong>, <strong>amount</strong>, and a computed column <em>interest</em> = amount × 0.07 rounded to 2 decimal places.',
+    solution:'SELECT loan_id, amount, ROUND(amount * 0.07, 2) AS interest FROM loans',
+    expected: TABLES.loans.map(r=>({loan_id:r.loan_id, amount:r.amount, interest:Math.round(r.amount*0.07*100)/100})),
+    hint:'ROUND(amount * 0.07, 2) AS interest'},
+  {id:'q_al4', level:1, concept:'aliases', type:'challenge', ordered:true,
+    prompt:'Using table aliases <em>l</em> for loans and <em>c</em> for customers, show each customer\'s <em>customer</em> (name) and <em>total_borrowed</em> (sum of their loan amounts). Order by total_borrowed descending.',
+    solution:"SELECT c.name AS customer, SUM(l.amount) AS total_borrowed FROM loans l JOIN customers c ON l.customer_id = c.customer_id GROUP BY c.name ORDER BY total_borrowed DESC",
+    expected:(function(){const m={};TABLES.loans.forEach(l=>{const c=TABLES.customers.find(c=>c.customer_id===l.customer_id);if(c){m[c.name]=(m[c.name]||0)+l.amount;}});return Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([customer,total_borrowed])=>({customer,total_borrowed}));})(),
+    hint:'GROUP BY c.name, then ORDER BY total_borrowed DESC'},
+
+  // ── WILDCARDS ADV ──────────────────────────────────────────────────────────
+  {id:'q_wl1', level:1, concept:'wildcards_adv', type:'warmup', ordered:false,
+    prompt:'Find all employees whose name starts with the letter <strong>A</strong>.',
+    solution:"SELECT * FROM employees WHERE name LIKE 'A%'",
+    expected: TABLES.employees.filter(r=>r.name.startsWith('A')),
+    hint:"WHERE name LIKE 'A%' — % matches any characters after A"},
+  {id:'q_wl2', level:1, concept:'wildcards_adv', type:'consolidate', ordered:false,
+    prompt:'Find all customers whose city ends with <strong>pur</strong> (e.g. Kuala Lumpur).',
+    solution:"SELECT * FROM customers WHERE city LIKE '%pur'",
+    expected: TABLES.customers.filter(r=>r.city.endsWith('pur')),
+    hint:"WHERE city LIKE '%pur' — % matches any characters before 'pur'"},
+  {id:'q_wl3', level:1, concept:'wildcards_adv', type:'stretch', ordered:false,
+    prompt:'Find employees whose name has <strong>a</strong> as the second character. Use the single-character wildcard.',
+    solution:"SELECT * FROM employees WHERE name LIKE '_a%'",
+    expected: TABLES.employees.filter(r=>r.name[1]==='a'),
+    hint:"WHERE name LIKE '_a%' — underscore matches exactly one character, then 'a', then anything"},
+  {id:'q_wl4', level:1, concept:'wildcards_adv', type:'challenge', ordered:false,
+    prompt:'Find customers whose name contains the letter <strong>o</strong> AND whose city starts with <strong>S</strong>.',
+    solution:"SELECT * FROM customers WHERE name LIKE '%o%' AND city LIKE 'S%'",
+    expected: TABLES.customers.filter(r=>r.name.includes('o')&&r.city.startsWith('S')),
+    hint:"Combine two LIKE conditions with AND: name LIKE '%o%' AND city LIKE 'S%'"},
+
+  // ── DATE GROUPING ──────────────────────────────────────────────────────────
+  {id:'q_dt1', level:2, concept:'date_functions', type:'warmup', ordered:true,
+    prompt:'Count how many loans were started in each year. Show <em>start_year</em> and <em>loan_count</em>, ordered by year.',
+    solution:'SELECT start_year, COUNT(*) AS loan_count FROM loans GROUP BY start_year ORDER BY start_year',
+    expected:(function(){const m={};TABLES.loans.forEach(l=>{m[l.start_year]=(m[l.start_year]||0)+1;});return Object.entries(m).sort((a,b)=>+a[0]-+b[0]).map(([start_year,loan_count])=>({start_year:+start_year,loan_count}));})(),
+    hint:'GROUP BY start_year, COUNT(*) AS loan_count, ORDER BY start_year'},
+  {id:'q_dt2', level:2, concept:'date_functions', type:'consolidate', ordered:true,
+    prompt:'Show the total loan amount per year as <em>total_amount</em>. Order by year ascending.',
+    solution:'SELECT start_year, SUM(amount) AS total_amount FROM loans GROUP BY start_year ORDER BY start_year',
+    expected:(function(){const m={};TABLES.loans.forEach(l=>{m[l.start_year]=(m[l.start_year]||0)+l.amount;});return Object.entries(m).sort((a,b)=>+a[0]-+b[0]).map(([start_year,total_amount])=>({start_year:+start_year,total_amount}));})(),
+    hint:'SUM(amount) AS total_amount, GROUP BY start_year'},
+  {id:'q_dt3', level:2, concept:'date_functions', type:'stretch', ordered:true,
+    prompt:'Return all loans that started in <strong>2023 or later</strong>, ordered by start_year then loan_id.',
+    solution:'SELECT * FROM loans WHERE start_year >= 2023 ORDER BY start_year, loan_id',
+    expected: [...TABLES.loans].filter(r=>r.start_year>=2023).sort((a,b)=>a.start_year-b.start_year||a.loan_id-b.loan_id),
+    hint:'WHERE start_year >= 2023 ORDER BY start_year, loan_id'},
+  {id:'q_dt4', level:2, concept:'date_functions', type:'challenge', ordered:true,
+    prompt:'For each start year, show <em>loan_count</em>, and the <em>top_credit</em> (highest credit score among the borrowers that year). Join loans to customers. Order by start_year.',
+    solution:"SELECT l.start_year, COUNT(*) AS loan_count, MAX(c.credit_score) AS top_credit FROM loans l JOIN customers c ON l.customer_id = c.customer_id GROUP BY l.start_year ORDER BY l.start_year",
+    expected:(function(){const m={};TABLES.loans.forEach(l=>{const c=TABLES.customers.find(c=>c.customer_id===l.customer_id);if(!m[l.start_year])m[l.start_year]={loan_count:0,top_credit:0};m[l.start_year].loan_count++;m[l.start_year].top_credit=Math.max(m[l.start_year].top_credit,c.credit_score);});return Object.entries(m).sort((a,b)=>+a[0]-+b[0]).map(([start_year,v])=>({start_year:+start_year,loan_count:v.loan_count,top_credit:v.top_credit}));})(),
+    hint:'JOIN customers, MAX(c.credit_score) AS top_credit, GROUP BY l.start_year'},
+
+  // ── RIGHT JOIN ─────────────────────────────────────────────────────────────
+  {id:'q_rj1', level:3, concept:'right_join', type:'warmup', ordered:false,
+    prompt:'Find all branches that have <strong>no employees</strong>. Show <em>branch_id</em>, <em>branch_name</em> (b.name), and <em>employee_name</em> (e.name). Use RIGHT JOIN.',
+    solution:"SELECT b.branch_id, b.name AS branch_name, e.name AS employee_name FROM employees e RIGHT JOIN branches b ON e.branch_id = b.branch_id WHERE e.employee_id IS NULL",
+    expected:[{branch_id:4,branch_name:'Bangsar',employee_name:null},{branch_id:5,branch_name:'Sudirman',employee_name:null}],
+    hint:'RIGHT JOIN branches, then WHERE e.employee_id IS NULL to keep only unmatched branches'},
+  {id:'q_rj2', level:3, concept:'right_join', type:'consolidate', ordered:true,
+    prompt:'Count employees per branch using RIGHT JOIN so every branch appears. Show <em>branch</em> (b.name) and <em>emp_count</em>. Order by branch name.',
+    solution:"SELECT b.name AS branch, COUNT(e.employee_id) AS emp_count FROM employees e RIGHT JOIN branches b ON e.branch_id = b.branch_id GROUP BY b.name ORDER BY b.name",
+    expected:[{branch:'Bangsar',emp_count:0},{branch:'Bukit Timah',emp_count:3},{branch:'Central',emp_count:4},{branch:'KLCC',emp_count:3},{branch:'Sudirman',emp_count:0}],
+    hint:'COUNT(e.employee_id) — not COUNT(*) — so unmatched branches show 0 not 1. ORDER BY b.name'},
+  {id:'q_rj3', level:3, concept:'right_join', type:'stretch', ordered:true,
+    prompt:'Using RIGHT JOIN, show <em>branch</em> (b.name), <em>country</em>, and <em>total_salary</em> (COALESCE SUM of salaries, 0 for empty branches). Order by total_salary descending.',
+    solution:"SELECT b.name AS branch, b.country, COALESCE(SUM(e.salary), 0) AS total_salary FROM employees e RIGHT JOIN branches b ON e.branch_id = b.branch_id GROUP BY b.name, b.country ORDER BY total_salary DESC",
+    expected:[{branch:'Central',country:'Singapore',total_salary:285000},{branch:'Bukit Timah',country:'Singapore',total_salary:210000},{branch:'KLCC',country:'Malaysia',total_salary:190000},{branch:'Bangsar',country:'Malaysia',total_salary:0},{branch:'Sudirman',country:'Indonesia',total_salary:0}],
+    hint:'COALESCE(SUM(e.salary), 0) handles branches with no employees. ORDER BY total_salary DESC'},
+  {id:'q_rj4', level:3, concept:'right_join', type:'challenge', ordered:true,
+    prompt:'Show <em>branch</em> (b.name), <em>city</em>, distinct department count as <em>dept_count</em>, and employee count as <em>emp_count</em> per branch using RIGHT JOIN. Order by emp_count descending.',
+    solution:"SELECT b.name AS branch, b.city, COUNT(DISTINCT e.department) AS dept_count, COUNT(e.employee_id) AS emp_count FROM employees e RIGHT JOIN branches b ON e.branch_id = b.branch_id GROUP BY b.name, b.city ORDER BY emp_count DESC",
+    expected:[{branch:'Central',city:'Singapore',dept_count:3,emp_count:4},{branch:'Bukit Timah',city:'Singapore',dept_count:2,emp_count:3},{branch:'KLCC',city:'Kuala Lumpur',dept_count:2,emp_count:3},{branch:'Bangsar',city:'Kuala Lumpur',dept_count:0,emp_count:0},{branch:'Sudirman',city:'Jakarta',dept_count:0,emp_count:0}],
+    hint:'COUNT(DISTINCT e.department) AS dept_count, COUNT(e.employee_id) AS emp_count, GROUP BY b.name, b.city'},
+
+  // ── CROSS JOIN ─────────────────────────────────────────────────────────────
+  {id:'q_cj1', level:3, concept:'cross_join', type:'warmup', ordered:true,
+    prompt:'Show every distinct combination of product <em>category</em> and branch <em>country</em> using CROSS JOIN. Order by category, then country.',
+    solution:"SELECT DISTINCT p.category, b.country FROM products p CROSS JOIN branches b ORDER BY p.category, b.country",
+    expected:[{category:'consumer',country:'Indonesia'},{category:'consumer',country:'Malaysia'},{category:'consumer',country:'Singapore'},{category:'corporate',country:'Indonesia'},{category:'corporate',country:'Malaysia'},{category:'corporate',country:'Singapore'},{category:'mortgage',country:'Indonesia'},{category:'mortgage',country:'Malaysia'},{category:'mortgage',country:'Singapore'},{category:'sme',country:'Indonesia'},{category:'sme',country:'Malaysia'},{category:'sme',country:'Singapore'}],
+    hint:'SELECT DISTINCT p.category, b.country FROM products p CROSS JOIN branches b ORDER BY p.category, b.country'},
+  {id:'q_cj2', level:3, concept:'cross_join', type:'consolidate', ordered:true,
+    prompt:'List all branches where the <strong>Home Loan</strong> (mortgage category) could be offered. Show <em>product</em> (p.name) and <em>branch</em> (b.name), ordered by branch name.',
+    solution:"SELECT p.name AS product, b.name AS branch FROM products p CROSS JOIN branches b WHERE p.category = 'mortgage' ORDER BY b.name",
+    expected:[{product:'Home Loan',branch:'Bangsar'},{product:'Home Loan',branch:'Bukit Timah'},{product:'Home Loan',branch:'Central'},{product:'Home Loan',branch:'KLCC'},{product:'Home Loan',branch:'Sudirman'}],
+    hint:"CROSS JOIN products and branches, WHERE p.category = 'mortgage', ORDER BY b.name"},
+  {id:'q_cj3', level:3, concept:'cross_join', type:'stretch', ordered:false,
+    prompt:'How many total product-branch combinations exist? Return a single value as <em>total_combinations</em>.',
+    solution:"SELECT COUNT(*) AS total_combinations FROM products CROSS JOIN branches",
+    expected:[{total_combinations:30}],
+    hint:'COUNT(*) FROM products CROSS JOIN branches — 6 products × 5 branches = 30'},
+  {id:'q_cj4', level:3, concept:'cross_join', type:'challenge', ordered:true,
+    prompt:'List all branches eligible for products requiring a minimum credit score above 700. Show <em>product</em> (p.name), <em>branch</em> (b.name), and <em>country</em>. Order by product, then branch.',
+    solution:"SELECT p.name AS product, b.name AS branch, b.country FROM products p CROSS JOIN branches b WHERE p.min_credit > 700 ORDER BY p.name, b.name",
+    expected:[{product:'Corporate Loan',branch:'Bangsar',country:'Malaysia'},{product:'Corporate Loan',branch:'Bukit Timah',country:'Singapore'},{product:'Corporate Loan',branch:'Central',country:'Singapore'},{product:'Corporate Loan',branch:'KLCC',country:'Malaysia'},{product:'Corporate Loan',branch:'Sudirman',country:'Indonesia'}],
+    hint:'WHERE p.min_credit > 700 filters products — only Corporate Loan (min_credit=750) qualifies'},
+
+  // ── ANY / ALL ──────────────────────────────────────────────────────────────
+  {id:'q_aa1', level:3, concept:'any_all', type:'warmup', ordered:false,
+    prompt:'Find all customers whose credit_score is higher than <strong>any</strong> SME-segment customer\'s credit score.',
+    solution:"SELECT * FROM customers WHERE credit_score > ANY (SELECT credit_score FROM customers WHERE segment = 'sme')",
+    expected: TABLES.customers.filter(r=>r.credit_score>680),
+    hint:"WHERE credit_score > ANY (...) means > the minimum of the set. SME scores: 680, 700 — so > 680"},
+  {id:'q_aa2', level:3, concept:'any_all', type:'consolidate', ordered:false,
+    prompt:'Find customers whose credit_score is higher than <strong>every</strong> SME-segment customer\'s credit score.',
+    solution:"SELECT * FROM customers WHERE credit_score > ALL (SELECT credit_score FROM customers WHERE segment = 'sme')",
+    expected: TABLES.customers.filter(r=>r.credit_score>700),
+    hint:"WHERE credit_score > ALL (...) means > the maximum of the set. Max SME score is 700 — so > 700"},
+  {id:'q_aa3', level:3, concept:'any_all', type:'stretch', ordered:false,
+    prompt:'Return <em>name</em> and <em>credit_score</em> for customers whose credit_score matches <strong>any</strong> retail customer\'s credit score.',
+    solution:"SELECT name, credit_score FROM customers WHERE credit_score = ANY (SELECT credit_score FROM customers WHERE segment = 'retail')",
+    expected: TABLES.customers.filter(r=>[720,750,580,660].includes(r.credit_score)).map(r=>({name:r.name,credit_score:r.credit_score})),
+    hint:"= ANY (...) is equivalent to IN (...). Retail credit scores: 720, 750, 580, 660"},
+  {id:'q_aa4', level:3, concept:'any_all', type:'challenge', ordered:false,
+    prompt:'Return <em>name</em> and <em>credit_score</em> for customers whose credit_score is greater than or equal to <strong>every</strong> corporate customer\'s credit score.',
+    solution:"SELECT name, credit_score FROM customers WHERE credit_score >= ALL (SELECT credit_score FROM customers WHERE segment = 'corporate')",
+    expected: TABLES.customers.filter(r=>r.credit_score>=810).map(r=>({name:r.name,credit_score:r.credit_score})),
+    hint:">= ALL means >= the maximum. Corporate scores: 810, 790 — max is 810, so only credit_score >= 810"},
+
+  // ── NULLIF ─────────────────────────────────────────────────────────────────
+  {id:'q_nf1', level:4, concept:'nullif_fn', type:'warmup', ordered:false,
+    prompt:'Show <em>employee_id</em>, <em>name</em>, and <em>manager</em> (NULLIF(manager_id, 5) — replace references to manager 5 with NULL).',
+    solution:"SELECT employee_id, name, NULLIF(manager_id, 5) AS manager FROM employees",
+    expected: TABLES.employees.map(e=>({employee_id:e.employee_id,name:e.name,manager:e.manager_id===5?null:e.manager_id})),
+    hint:'NULLIF(manager_id, 5) returns NULL when manager_id = 5, otherwise returns manager_id'},
+  {id:'q_nf2', level:4, concept:'nullif_fn', type:'consolidate', ordered:false,
+    prompt:'Show <em>loan_id</em>, <em>amount</em>, and <em>status</em> for all loans — but replace the value \'closed\' with NULL using NULLIF.',
+    solution:"SELECT loan_id, amount, NULLIF(status, 'closed') AS status FROM loans",
+    expected: TABLES.loans.map(l=>({loan_id:l.loan_id,amount:l.amount,status:l.status==='closed'?null:l.status})),
+    hint:"NULLIF(status, 'closed') returns NULL when status = 'closed'"},
+  {id:'q_nf3', level:4, concept:'nullif_fn', type:'stretch', ordered:false,
+    prompt:'Show <em>customer_id</em>, <em>name</em>, and <em>city</em> — replacing \'Singapore\' with NULL using NULLIF.',
+    solution:"SELECT customer_id, name, NULLIF(city, 'Singapore') AS city FROM customers",
+    expected: TABLES.customers.map(c=>({customer_id:c.customer_id,name:c.name,city:c.city==='Singapore'?null:c.city})),
+    hint:"NULLIF(city, 'Singapore') returns NULL for Singapore customers"},
+  {id:'q_nf4', level:4, concept:'nullif_fn', type:'challenge', ordered:true,
+    prompt:'Show each employee\'s <em>name</em>, <em>salary</em>, and <em>manager_code</em>: COALESCE(NULLIF(manager_id, 5), 0) — converts manager_id=5 or NULL to 0. Order by employee_id.',
+    solution:"SELECT name, salary, COALESCE(NULLIF(manager_id, 5), 0) AS manager_code FROM employees ORDER BY employee_id",
+    expected: TABLES.employees.map(e=>({name:e.name,salary:e.salary,manager_code:(e.manager_id===5||e.manager_id===null)?0:e.manager_id})),
+    hint:'NULLIF(manager_id, 5) → null for manager_id=5. COALESCE(that, 0) → 0 for null values'},
+
+  // ── INSERT INTO (Level 5) ──────────────────────────────────────────────────
+  {id:'q_ins1', level:5, concept:'insert_rows', type:'warmup', ordered:false,
+    prompt:'Insert a new branch: branch_id=6, name=\'Tokyo HQ\', city=\'Tokyo\', country=\'Japan\'. Write the INSERT INTO statement.',
+    solution:"INSERT INTO branches (branch_id, name, city, country) VALUES (6, 'Tokyo HQ', 'Tokyo', 'Japan')",
+    verify:"SELECT * FROM branches WHERE branch_id = 6",
+    expected:[{branch_id:6,name:'Tokyo HQ',city:'Tokyo',country:'Japan'}],
+    hint:"INSERT INTO branches (branch_id, name, city, country) VALUES (6, 'Tokyo HQ', 'Tokyo', 'Japan')"},
+  {id:'q_ins2', level:5, concept:'insert_rows', type:'consolidate', ordered:false,
+    prompt:'Insert a new customer: customer_id=201, name=\'Mei Lin\', city=\'Singapore\', segment=\'retail\', credit_score=735.',
+    solution:"INSERT INTO customers (customer_id, name, city, segment, credit_score) VALUES (201, 'Mei Lin', 'Singapore', 'retail', 735)",
+    verify:"SELECT * FROM customers WHERE customer_id = 201",
+    expected:[{customer_id:201,name:'Mei Lin',city:'Singapore',segment:'retail',credit_score:735}],
+    hint:"INSERT INTO customers (customer_id, name, city, segment, credit_score) VALUES (201, 'Mei Lin', 'Singapore', 'retail', 735)"},
+  {id:'q_ins3', level:5, concept:'insert_rows', type:'stretch', ordered:false,
+    prompt:'Insert a new loan: loan_id=11, customer_id=201, amount=9500, status=\'active\', interest_rate=6.0, start_year=2025.',
+    solution:"INSERT INTO loans (loan_id, customer_id, amount, status, interest_rate, start_year) VALUES (11, 201, 9500, 'active', 6.0, 2025)",
+    verify:"SELECT * FROM loans WHERE loan_id = 11",
+    expected:[{loan_id:11,customer_id:201,amount:9500,status:'active',interest_rate:6,start_year:2025}],
+    hint:"INSERT INTO loans (loan_id, customer_id, amount, status, interest_rate, start_year) VALUES (11, 201, 9500, 'active', 6.0, 2025)"},
+  {id:'q_ins4', level:5, concept:'insert_rows', type:'challenge', ordered:false,
+    prompt:'Insert a new payment: payment_id=13, loan_id=5, amount=800, month=\'Feb\', status=\'paid\'.',
+    solution:"INSERT INTO payments (payment_id, loan_id, amount, month, status) VALUES (13, 5, 800, 'Feb', 'paid')",
+    verify:"SELECT * FROM payments WHERE payment_id = 13",
+    expected:[{payment_id:13,loan_id:5,amount:800,month:'Feb',status:'paid'}],
+    hint:"INSERT INTO payments (payment_id, loan_id, amount, month, status) VALUES (13, 5, 800, 'Feb', 'paid')"},
+
+  // ── UPDATE (Level 5) ───────────────────────────────────────────────────────
+  {id:'q_upd1', level:5, concept:'update_rows', type:'warmup', ordered:false,
+    prompt:'Update customer 108 (Han Solo): change credit_score from 660 to 680. Verify with SELECT credit_score FROM customers WHERE customer_id = 108.',
+    solution:"UPDATE customers SET credit_score = 680 WHERE customer_id = 108",
+    verify:"SELECT credit_score FROM customers WHERE customer_id = 108",
+    expected:[{credit_score:680}],
+    hint:"UPDATE customers SET credit_score = 680 WHERE customer_id = 108"},
+  {id:'q_upd2', level:5, concept:'update_rows', type:'consolidate', ordered:true,
+    prompt:'Increase interest_rate by 2 for all defaulted loans. Verify with SELECT loan_id, interest_rate FROM loans WHERE status = \'defaulted\' ORDER BY loan_id.',
+    solution:"UPDATE loans SET interest_rate = interest_rate + 2 WHERE status = 'defaulted'",
+    verify:"SELECT loan_id, interest_rate FROM loans WHERE status = 'defaulted' ORDER BY loan_id",
+    expected:[{loan_id:4,interest_rate:11.5},{loan_id:9,interest_rate:13.2}],
+    hint:"UPDATE loans SET interest_rate = interest_rate + 2 WHERE status = 'defaulted'"},
+  {id:'q_upd3', level:5, concept:'update_rows', type:'stretch', ordered:false,
+    prompt:'Update branch 5 (Sudirman): change both name and city to \'Jakarta Selatan\'. Verify with SELECT name, city FROM branches WHERE branch_id = 5.',
+    solution:"UPDATE branches SET name = 'Jakarta Selatan', city = 'Jakarta Selatan' WHERE branch_id = 5",
+    verify:"SELECT name, city FROM branches WHERE branch_id = 5",
+    expected:[{name:'Jakarta Selatan',city:'Jakarta Selatan'}],
+    hint:"UPDATE branches SET name = 'Jakarta Selatan', city = 'Jakarta Selatan' WHERE branch_id = 5"},
+  {id:'q_upd4', level:5, concept:'update_rows', type:'challenge', ordered:false,
+    prompt:'Promote to \'premium\' segment any customer whose total loan amount exceeds 20000. Use a subquery in the WHERE clause. Verify with SELECT customer_id, name, segment FROM customers WHERE segment = \'premium\'.',
+    solution:"UPDATE customers SET segment = 'premium' WHERE customer_id IN (SELECT customer_id FROM loans GROUP BY customer_id HAVING SUM(amount) > 20000)",
+    verify:"SELECT customer_id, name, segment FROM customers WHERE segment = 'premium'",
+    expected:[{customer_id:105,name:'Eve Rahman',segment:'premium'}],
+    hint:"Use IN (SELECT customer_id FROM loans GROUP BY customer_id HAVING SUM(amount) > 20000)"},
+
+  // ── DELETE (Level 5) ───────────────────────────────────────────────────────
+  {id:'q_del1', level:5, concept:'delete_rows', type:'warmup', ordered:false,
+    prompt:'Delete the branch with branch_id = 5 (Sudirman). Verify with SELECT COUNT(*) AS remaining FROM branches.',
+    solution:"DELETE FROM branches WHERE branch_id = 5",
+    verify:"SELECT COUNT(*) AS remaining FROM branches",
+    expected:[{remaining:4}],
+    hint:"DELETE FROM branches WHERE branch_id = 5"},
+  {id:'q_del2', level:5, concept:'delete_rows', type:'consolidate', ordered:false,
+    prompt:'Delete all payments with status = \'missed\'. Verify with SELECT COUNT(*) AS cnt FROM payments WHERE status = \'missed\'.',
+    solution:"DELETE FROM payments WHERE status = 'missed'",
+    verify:"SELECT COUNT(*) AS cnt FROM payments WHERE status = 'missed'",
+    expected:[{cnt:0}],
+    hint:"DELETE FROM payments WHERE status = 'missed'"},
+  {id:'q_del3', level:5, concept:'delete_rows', type:'stretch', ordered:false,
+    prompt:'Delete loans that are both defaulted AND have an amount below 5000. Verify with SELECT COUNT(*) AS remaining FROM loans.',
+    solution:"DELETE FROM loans WHERE status = 'defaulted' AND amount < 5000",
+    verify:"SELECT COUNT(*) AS remaining FROM loans",
+    expected:[{remaining:8}],
+    hint:"DELETE FROM loans WHERE status = 'defaulted' AND amount < 5000 — both loan_id 4 (3200) and 9 (4500) match"},
+  {id:'q_del4', level:5, concept:'delete_rows', type:'challenge', ordered:false,
+    prompt:'Delete all payments belonging to defaulted loans. Use a subquery to identify which loan_ids are defaulted. Verify with SELECT COUNT(*) AS remaining FROM payments.',
+    solution:"DELETE FROM payments WHERE loan_id IN (SELECT loan_id FROM loans WHERE status = 'defaulted')",
+    verify:"SELECT COUNT(*) AS remaining FROM payments",
+    expected:[{remaining:11}],
+    hint:"DELETE FROM payments WHERE loan_id IN (SELECT loan_id FROM loans WHERE status = 'defaulted') — removes payment_id 7 (loan 4 is defaulted)"}
 ];
+
+// Level 1 warmups for new concepts
+// (aliases + wildcards_adv warmups are q_al1 and q_wl1, already typed='warmup')
+// Level 2–4 warmups for new concepts also already set above
 
 // ─── UNLOCK POOL ─────────────────────────────────────────────────────────────
 
@@ -914,7 +1850,7 @@ const UNLOCK_POOL = ['q27','q29','q31','q33','q34','q28','q30','q32','q35'];
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
 
-const STORAGE_KEY = 'sql_trainer_v1';
+const STORAGE_KEY = 'sql_trainer_v2';
 
 const DEFAULT_PROGRESS = {
   level: 1,
@@ -950,10 +1886,9 @@ function getTodayString() {
   return `${y}-${m}-${day}`;
 }
 
-function pickQuestion(level, concept, type, excludeIds) {
-  let q = QUESTIONS.find(q => q.level===level && q.concept===concept && q.type===type && !excludeIds.includes(q.id));
-  if (!q) q = QUESTIONS.find(q => q.level===level && q.concept===concept && q.type===type);
-  return q;
+function pickQ(level, concept, type, exclude) {
+  return QUESTIONS.find(q => q.level===level && q.concept===concept && q.type===type && !exclude.includes(q.id))
+    || QUESTIONS.find(q => q.level===level && q.concept===concept && q.type===type);
 }
 
 function generateSession() {
@@ -961,29 +1896,33 @@ function generateSession() {
   const concepts = CURRICULUM[level].concepts;
   const conceptIndex = progress.completedSessions % concepts.length;
   const concept = concepts[conceptIndex];
+  const done = progress.completedQuestions;
 
-  const q1 = pickQuestion(level, concept, 'consolidate', progress.completedQuestions);
-  const exclude = [...progress.completedQuestions, q1 ? q1.id : ''];
-  const q2 = pickQuestion(level, concept, 'stretch', exclude);
+  const w  = pickQ(level, concept, 'warmup',      done);
+  const c  = pickQ(level, concept, 'consolidate', [...done, w?.id]);
+  const s  = pickQ(level, concept, 'stretch',     [...done, w?.id, c?.id]);
+  const ch = pickQ(level, concept, 'challenge',   [...done, w?.id, c?.id, s?.id]);
+
+  // Q4: review — first unseen question from any other concept
+  const otherConcepts = Object.keys(CONCEPT_LABELS).filter(x => x !== concept);
+  let rev = null;
+  for (const oc of otherConcepts) {
+    rev = QUESTIONS.find(q => q.concept === oc && !done.includes(q.id) && q.id !== w?.id && q.id !== c?.id && q.id !== s?.id && q.id !== ch?.id);
+    if (rev) break;
+  }
+  if (!rev) rev = QUESTIONS.find(q => q.concept !== concept);
+
+  const slot = (q, status = 'locked') => ({id: q?.id || null, status, attempts: 0});
 
   const session = {
     date: getTodayString(),
     conceptIndex,
     concept,
-    q1: {id: q1 ? q1.id : null, status: 'pending', attempts: 0},
-    q2: {id: q2 ? q2.id : null, status: 'locked', attempts: 0}
-  };
-
-  // pick 3 unlock questions cycling through pool
-  const offset = progress.completedSessions % (UNLOCK_POOL.length - 2);
-  session.unlock = {
-    questions: [
-      {id: UNLOCK_POOL[offset % UNLOCK_POOL.length], status:'pending'},
-      {id: UNLOCK_POOL[(offset+1) % UNLOCK_POOL.length], status:'pending'},
-      {id: UNLOCK_POOL[(offset+2) % UNLOCK_POOL.length], status:'pending'}
-    ],
-    totalAttempts: 0,
-    status: 'pending' // 'pending' | 'unlocked' | 'failed'
+    q1: slot(w,  'pending'),
+    q2: slot(c),
+    q3: slot(s),
+    q4: slot(rev),
+    q5: slot(ch),
   };
 
   progress.currentSession = session;
@@ -1025,30 +1964,27 @@ function completeSession() {
   }
 
   // add completed questions
-  if (session.q1.id && !progress.completedQuestions.includes(session.q1.id)) {
-    progress.completedQuestions.push(session.q1.id);
-  }
-  if (session.q2.id && !progress.completedQuestions.includes(session.q2.id)) {
-    progress.completedQuestions.push(session.q2.id);
-  }
+  ['q1','q2','q3','q4','q5'].forEach(k => {
+    if (session[k]?.id && !progress.completedQuestions.includes(session[k].id)) {
+      progress.completedQuestions.push(session[k].id);
+    }
+  });
 
   progress.completedSessions += 1;
 
   // check level up: concepts.length * 2 sessions = one full pass through all concepts with both question types
   const currentLevel = progress.level;
-  if (currentLevel < 3) {
+  if (currentLevel < 5) {
     const concepts = CURRICULUM[currentLevel].concepts;
     const sessionsNeeded = concepts.length;
     if (progress.completedSessions >= sessionsNeeded) {
-      // count sessions for this level
       const sessionsForLevel = progress.completedSessions % sessionsNeeded === 0 &&
         progress.completedSessions > 0 &&
-        // rough heuristic: we've cycled through all concepts
         CURRICULUM[currentLevel].concepts.every(c =>
           QUESTIONS.some(q => q.concept===c && q.level===currentLevel && progress.completedQuestions.includes(q.id))
         );
       if (sessionsForLevel) {
-        progress.level = Math.min(3, currentLevel + 1);
+        progress.level = Math.min(5, currentLevel + 1);
       }
     }
   }
@@ -1059,7 +1995,7 @@ function completeSession() {
 // ─── EVALUATION ENGINE ───────────────────────────────────────────────────────
 
 function setupDB() {
-  ['loans','customers','payments'].forEach(t => {
+  ['loans','customers','payments','employees','branches','transactions','products'].forEach(t => {
     try { alasql(`DROP TABLE ${t}`); } catch(e) {}
     alasql(`CREATE TABLE ${t}`);
     alasql.tables[t].data = TABLES[t].map(r => Object.assign({}, r));
@@ -1094,6 +2030,17 @@ function compareResults(actual, expected, ordered) {
 
 function evaluate(question, userSQL) {
   try {
+    if (question.verify) {
+      // DML question: run user's statement, then run verify SELECT to check result
+      setupDB();
+      alasql(userSQL.trim());
+      const result = alasql(question.verify);
+      const pass = compareResults(result, question.expected, question.ordered || false);
+      if (pass) return {pass:true, result};
+      let hint = question.hint;
+      if (result.length !== question.expected.length) hint = `Verification returned ${result.length} row(s), expected ${question.expected.length}. ` + question.hint;
+      return {pass:false, hint, result, got:result.length, expected:question.expected.length};
+    }
     const result = runQuery(userSQL.trim());
     const pass = compareResults(result, question.expected, question.ordered || false);
     if (pass) return {pass:true, result};
@@ -1120,6 +2067,24 @@ function buildResultTable(rows) {
   html += '</tbody></table>';
   if (more) html += `<div class="more-rows">+${more} more row(s)</div>`;
   return html;
+}
+
+// ─── SHOW SOLUTION ───────────────────────────────────────────────────────────
+
+function showSolution(qKey) {
+  const session = progress.currentSession;
+  const qSlot = session[qKey];
+  const qdef = QUESTIONS.find(q => q.id === qSlot.id);
+  if (!qdef) return;
+  const ta = document.getElementById(`ta-${qKey}`);
+  ta.value = qdef.solution;
+  ta.className = '';
+  const hl = document.getElementById(`hl-${qKey}`);
+  if (hl) syncHL(ta, hl);
+  const fb = document.getElementById(`fb-${qKey}`);
+  fb.className = 'feedback fail show';
+  fb.innerHTML = `<div style="color:var(--warning)">Solution revealed — study it, then run it to continue.</div>`;
+  document.getElementById(`rp-${qKey}`).className = 'result-preview';
 }
 
 // ─── UNLOCK FUNCTIONS ────────────────────────────────────────────────────────
@@ -1175,12 +2140,17 @@ function submitUnlock(uIndex) {
     ta.className = 'error';
     fb.className = 'feedback fail show';
     let msg = ev.hint || 'Not quite right.';
-    if (!ev.error && ev.result && ev.result.length > 0) {
-      fb.innerHTML = `<div>${msg}</div><div class="hint" style="margin-top:8px">Attempts used: ${session.unlock.totalAttempts}/5</div>`;
+    fb.innerHTML = `<div>${msg}</div><div class="hint" style="margin-top:6px">Attempts used: ${session.unlock.totalAttempts}/5</div>`;
+    if (!ev.error) {
       rp.className = 'result-preview show';
-      rp.innerHTML = buildResultTable(ev.result);
+      const yourRows = ev.result || [];
+      rp.innerHTML =
+        `<div style="font-size:11px;color:var(--error);font-weight:700;margin-bottom:4px">YOUR RESULT (${yourRows.length} row${yourRows.length !== 1 ? 's' : ''})</div>` +
+        buildResultTable(yourRows) +
+        `<div style="font-size:11px;color:var(--accent);font-weight:700;margin:10px 0 4px">EXPECTED (${qdef.expected.length} row${qdef.expected.length !== 1 ? 's' : ''})</div>` +
+        buildResultTable(qdef.expected);
     } else {
-      fb.innerHTML = `<div>${msg}</div><div class="hint" style="margin-top:8px">Attempts used: ${session.unlock.totalAttempts}/5</div>`;
+      rp.className = 'result-preview';
     }
   }
 
@@ -1195,33 +2165,25 @@ function submitUnlock(uIndex) {
 
 // ─── RENDER TODAY TAB ────────────────────────────────────────────────────────
 
+const Q_LABELS = {q1:'Q1 · Warm-up', q2:'Q2 · Consolidate', q3:'Q3 · Stretch', q4:'Q4 · Review', q5:'Q5 · Challenge'};
+
 function renderToday() {
   const session = getOrCreateSession();
   const concept = session.concept;
-  const q1def = QUESTIONS.find(q=>q.id===session.q1.id);
-  const q2def = QUESTIONS.find(q=>q.id===session.q2.id);
-  const level = progress.level;
   const dayNumber = progress.completedSessions + 1;
-  const bothPass = session.q1.status==='pass' && session.q2.status==='pass';
+  const allPass = ['q1','q2','q3','q4','q5'].every(k => !session[k] || session[k].status === 'pass');
 
-  let html = '';
-
-  // Session meta
-  html += `<div class="card">
+  let html = `<div class="card">
     <div class="session-meta">
       <strong>Day ${dayNumber}</strong>
       <span style="color:var(--text-dim)">·</span>
-      <span>Today: <span class="pill concept">${CONCEPT_LABELS[concept]}</span></span>
-    </div>`;
-
-  // Collapsible tip
-  html += `
+      <span>Topic: <span class="pill concept">${CONCEPT_LABELS[concept]}</span></span>
+    </div>
     <button class="collapsible-btn" onclick="toggleCollapsible('tip')">
       <span><span class="icon">💡</span>Tip — ${CONCEPT_LABELS[concept]}</span>
       <span class="chevron">▼</span>
     </button>
     <div class="collapsible-content" id="coll-tip">${TIPS[concept]}</div>
-
     <button class="collapsible-btn" onclick="toggleCollapsible('scenario')">
       <span><span class="icon">📊</span>Real-world scenario</span>
       <span class="chevron">▼</span>
@@ -1229,8 +2191,7 @@ function renderToday() {
     <div class="collapsible-content" id="coll-scenario">${SCENARIOS[concept]}</div>
   </div>`;
 
-  // Session complete banner
-  if (bothPass) {
+  if (allPass) {
     html += `<div class="complete-banner">
       <h2>Session complete! 🎉</h2>
       <div class="streak-display">🔥 ${progress.streak}</div>
@@ -1238,87 +2199,35 @@ function renderToday() {
     </div>`;
   }
 
-  // Q1
-  if (q1def) {
-    const q1 = session.q1;
-    const isDone = q1.status==='pass';
-    html += `<div class="q-card${isDone?' done':''}">
+  ['q1','q2','q3','q4','q5'].forEach((k, idx) => {
+    if (!session[k]) return;
+    const qdef = QUESTIONS.find(q => q.id === session[k].id);
+    if (!qdef) return;
+    const slot = session[k];
+    const isLocked = slot.status === 'locked';
+    const isDone   = slot.status === 'pass';
+    const reviewTag = (k === 'q4' && qdef.concept !== concept)
+      ? ` · <span style="color:var(--accent2)">${CONCEPT_LABELS[qdef.concept]}</span>` : '';
+    html += `<div class="q-card${isLocked?' locked':''}">
       <div class="q-header">
-        <span class="q-label">Q1 · Consolidate</span>
-        ${isDone ? '<span class="pill pass">✓ Pass</span>' : ''}
+        <span class="q-label">${Q_LABELS[k]}${reviewTag}</span>
+        ${isDone ? '<span class="pill pass">✓ Pass</span>' : isLocked ? `<span class="pill locked">🔒 Complete Q${idx} first</span>` : ''}
       </div>
-      <div class="q-prompt">${q1def.prompt}</div>
-      <textarea id="ta-q1" placeholder="Write your SQL here..." ${isDone?'disabled':''}
-        onkeydown="handleTabKey(event)">${isDone ? q1def.solution : ''}</textarea>
-      ${!isDone ? `<button class="run-btn" onclick="submitAnswer('q1')">▶ Run &amp; Check</button>` : ''}
-      <div class="feedback" id="fb-q1"></div>
-      <div class="result-preview" id="rp-q1"></div>
+      <div class="q-prompt">${qdef.prompt}</div>
+      <div class="editor-wrap">
+        <textarea id="ta-${k}" placeholder="Write your SQL here..." ${isDone||isLocked?'disabled':''}
+          onkeydown="handleTabKey(event)">${isDone ? qdef.solution : ''}</textarea>
+        <pre class="hl-layer" id="hl-${k}"></pre>
+      </div>
+      ${!isDone && !isLocked ? `<button class="run-btn" onclick="submitAnswer('${k}')">▶ Run &amp; Check</button>` : ''}
+      <div class="feedback" id="fb-${k}"></div>
+      <div class="result-preview" id="rp-${k}"></div>
     </div>`;
-  }
-
-  // Q2
-  if (q2def) {
-    const q2 = session.q2;
-    const isLocked = q2.status==='locked';
-    const isDone = q2.status==='pass';
-    html += `<div class="q-card${isLocked?' locked':''}${isDone?' done':''}">
-      <div class="q-header">
-        <span class="q-label">Q2 · Stretch</span>
-        ${isDone ? '<span class="pill pass">✓ Pass</span>' : isLocked ? '<span class="pill locked">🔒 Complete Q1 first</span>' : ''}
-      </div>
-      <div class="q-prompt">${q2def.prompt}</div>
-      <textarea id="ta-q2" placeholder="Write your SQL here..." ${isDone||isLocked?'disabled':''}
-        onkeydown="handleTabKey(event)">${isDone ? q2def.solution : ''}</textarea>
-      ${!isDone && !isLocked ? `<button class="run-btn" onclick="submitAnswer('q2')">▶ Run &amp; Check</button>` : ''}
-      <div class="feedback" id="fb-q2"></div>
-      <div class="result-preview" id="rp-q2"></div>
-    </div>`;
-  }
-
-  // Unlock section — only show if both Q1 + Q2 passed
-  if (bothPass && session.unlock) {
-    const u = session.unlock;
-    const failed = u.status === 'failed';
-    const unlocked = u.status === 'unlocked';
-
-    html += `<div class="card" style="border-color:var(--warning)">
-      <div class="card-header">
-        <span class="card-title" style="color:var(--warning)">🔓 Unlock Tomorrow Early</span>
-        <span id="unlock-attempts" style="font-size:12px;color:var(--text-dim)">${u.totalAttempts} / 5 attempts used</span>
-      </div>
-      <p style="font-size:13px;color:var(--text-dim);margin-bottom:12px">Answer 3 advanced questions within 5 total attempts to access tomorrow's session now.</p>`;
-
-    if (unlocked) {
-      html += `<div style="text-align:center;padding:12px;color:var(--success);font-weight:700">✅ Unlocked! Next session loaded above.</div>`;
-    } else if (failed) {
-      html += `<div style="text-align:center;padding:12px;color:var(--error);font-weight:700">🔒 Attempts exhausted. Come back tomorrow.</div>`;
-    } else {
-      u.questions.forEach((uq, i) => {
-        const qdef = QUESTIONS.find(q=>q.id===uq.id);
-        if (!qdef) return;
-        const isDone = uq.status === 'pass';
-        const isLocked = failed && !isDone;
-        html += `<div class="q-card" style="border-color:rgba(245,158,11,0.3);${isLocked?'opacity:0.4;pointer-events:none':''}">
-          <div class="q-header">
-            <span class="q-label" style="color:var(--warning)">U${i+1} · ${CONCEPT_LABELS[qdef.concept]}</span>
-            ${isDone ? '<span class="pill pass">✓ Pass</span>' : ''}
-          </div>
-          <div class="q-prompt">${qdef.prompt}</div>
-          <textarea id="ta-u${i}" placeholder="Write your SQL here..." ${isDone||failed?'disabled':''}
-            onkeydown="handleTabKey(event)">${isDone ? qdef.solution : ''}</textarea>
-          ${!isDone && !failed ? `<button class="run-btn" style="background:var(--warning);color:#000" onclick="submitUnlock(${i})">▶ Run &amp; Check</button>` : ''}
-          <div class="feedback" id="fb-u${i}"></div>
-          <div class="result-preview" id="rp-u${i}"></div>
-        </div>`;
-      });
-    }
-
-    html += `</div>`;
-  }
+  });
 
   document.getElementById('today-content').innerHTML = html;
   updateHeader();
-  updateUnlockHeader();
+  initHighlighters();
 }
 
 function toggleCollapsible(id) {
@@ -1339,10 +2248,12 @@ function handleTabKey(e) {
   }
 }
 
+const NEXT_Q = {q1:'q2', q2:'q3', q3:'q4', q4:'q5'};
+
 function submitAnswer(qKey) {
   const session = progress.currentSession;
   const qSlot = session[qKey];
-  const qdef = QUESTIONS.find(q=>q.id===qSlot.id);
+  const qdef = QUESTIONS.find(q => q.id === qSlot.id);
   if (!qdef) return;
 
   const ta = document.getElementById(`ta-${qKey}`);
@@ -1363,38 +2274,1149 @@ function submitAnswer(qKey) {
     qSlot.status = 'pass';
     ta.className = 'success';
     ta.disabled = true;
+    const hl = document.getElementById(`hl-${qKey}`);
+    if (hl) syncHL(ta, hl);
 
     fb.className = 'feedback pass show';
     fb.innerHTML = `Correct! Your query returned ${ev.result.length} row(s).`;
-
     rp.className = 'result-preview show';
     rp.innerHTML = buildResultTable(ev.result);
 
-    if (qKey === 'q1') {
-      session.q2.status = 'pending';
-    }
+    const nextKey = NEXT_Q[qKey];
+    if (nextKey && session[nextKey]) session[nextKey].status = 'pending';
 
-    if (session.q1.status==='pass' && session.q2.status==='pass') {
-      completeSession();
-    }
+    const allDone = ['q1','q2','q3','q4','q5'].every(k => !session[k] || session[k].status === 'pass');
+    if (allDone) completeSession();
 
     saveProgress(progress);
-    // re-render to update lock state / complete banner
     setTimeout(() => renderToday(), 400);
   } else {
     ta.className = 'error';
     fb.className = 'feedback fail show';
     let msg = ev.hint || 'Not quite right.';
-    if (!ev.error && ev.result && ev.result.length > 0) {
-      fb.innerHTML = `<div>${msg}</div><div class="hint" style="margin-top:8px">Attempts: ${qSlot.attempts}</div>`;
+    const solutionBtn = qSlot.attempts >= 3
+      ? `<button onclick="showSolution('${qKey}')" style="display:block;margin-top:10px;background:none;border:1px solid var(--warning);color:var(--warning);border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:600">Show Solution</button>`
+      : '';
+    fb.innerHTML = `<div>${msg}</div><div class="hint" style="margin-top:6px">Attempts: ${qSlot.attempts}</div>${solutionBtn}`;
+    if (!ev.error) {
       rp.className = 'result-preview show';
-      rp.innerHTML = buildResultTable(ev.result);
+      const yourRows = ev.result || [];
+      rp.innerHTML =
+        `<div style="font-size:11px;color:var(--error);font-weight:700;margin-bottom:4px">YOUR RESULT (${yourRows.length} row${yourRows.length !== 1 ? 's' : ''})</div>` +
+        buildResultTable(yourRows) +
+        `<div style="font-size:11px;color:var(--accent);font-weight:700;margin:10px 0 4px">EXPECTED (${qdef.expected.length} row${qdef.expected.length !== 1 ? 's' : ''})</div>` +
+        buildResultTable(qdef.expected);
     } else {
-      fb.innerHTML = `<div>${msg}</div>`;
       rp.className = 'result-preview';
     }
     saveProgress(progress);
   }
+}
+
+// ─── WIKI ────────────────────────────────────────────────────────────────────
+
+function renderWiki() {
+  document.getElementById('wiki-content').innerHTML = buildWikiHTML();
+}
+
+function toggleWikiCard(el) {
+  el.classList.toggle('open');
+}
+
+function filterWiki(q) {
+  const term = q.toLowerCase();
+  document.querySelectorAll('.ref-card').forEach(card => {
+    const hidden = term.length > 0 && !card.dataset.search.includes(term);
+    card.classList.toggle('hidden', hidden);
+    if (term.length > 0 && !hidden) {
+      card.classList.add('open');
+    } else if (term.length === 0) {
+      card.classList.remove('open');
+    }
+  });
+  document.querySelectorAll('.ref-level-header').forEach(h => {
+    const allHidden = [...h.parentElement.querySelectorAll('.ref-card')].filter(c => {
+      let el = c.previousElementSibling;
+      while (el && !el.classList.contains('ref-level-header')) el = el.previousElementSibling;
+      return el === h;
+    }).every(c => c.classList.contains('hidden'));
+    h.style.display = allHidden ? 'none' : '';
+  });
+}
+
+function buildWikiHTML() {
+  function esc(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  }
+  function code(s) {
+    return `<pre class="ref-code">${esc(s)}</pre>`;
+  }
+  function card(label, lvl, desc, syntax, example, tipText) {
+    const search = (label + ' ' + desc + ' ' + syntax + ' ' + example).toLowerCase();
+    return `<div class="card ref-card" data-search="${esc(search)}" onclick="toggleWikiCard(this)">
+      <div class="ref-card-trigger">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="ref-card-label" style="font-size:15px;font-weight:700;color:var(--text)">${label}</span>
+          <span class="concept-level-pill lvl-${lvl}">Lvl ${lvl}</span>
+        </div>
+        <span class="ref-card-chevron">▼</span>
+      </div>
+      <div class="ref-card-body">
+        <p style="font-size:13px;color:var(--text-dim);line-height:1.6;margin-bottom:8px">${desc}</p>
+        <div class="ref-label">Syntax</div>${code(syntax)}
+        <div class="ref-label">Example</div>${code(example)}
+        <div class="ref-tip">💡 ${tipText}</div>
+      </div>
+    </div>`;
+  }
+  function lvlHeader(lvl, name) {
+    return `<div class="ref-level-header">Level ${lvl} — ${name}</div>`;
+  }
+
+  return `<input class="wiki-search" type="text" placeholder="🔍  Search concepts, keywords..." oninput="filterWiki(this.value)">` +
+
+  lvlHeader(1, 'Foundations') +
+
+  card('SELECT', 1,
+    'Specifies which columns to return from a table. The foundation of every query.',
+    `SELECT col1, col2      -- specific columns
+SELECT *               -- all columns
+SELECT col AS alias    -- rename a column in the result`,
+    `SELECT loan_id, amount, status
+FROM loans`,
+    'Column order in the result follows your SELECT list, not the table definition. Always prefer naming columns over <code>SELECT *</code> in production.'
+  ) +
+
+  card('WHERE', 1,
+    'Filters rows before they are returned. Only rows where the condition is TRUE are included.',
+    `SELECT ...
+FROM table
+WHERE column = 'value'
+WHERE column > 100
+WHERE column IS NULL`,
+    `SELECT *
+FROM loans
+WHERE status = 'active'`,
+    'String values use single quotes. WHERE runs <em>before</em> any grouping or aggregation — it operates on raw rows, not computed values.'
+  ) +
+
+  card('AND / OR', 1,
+    'Combines multiple conditions in WHERE. AND requires both to be true; OR requires either.',
+    `WHERE cond1 AND cond2          -- both must be true
+WHERE cond1 OR cond2           -- either must be true
+WHERE (cond1 OR cond2) AND cond3  -- parentheses control precedence`,
+    `SELECT *
+FROM loans
+WHERE status = 'active'
+  AND amount > 8000`,
+    'AND has higher precedence than OR — it binds tighter. Always use parentheses when mixing both to make intent explicit and avoid subtle bugs.'
+  ) +
+
+  card('ORDER BY', 1,
+    'Sorts the result set. Without ORDER BY, row order is unpredictable and should never be relied on.',
+    `SELECT ...
+FROM table
+ORDER BY col DESC       -- largest / latest first
+ORDER BY col ASC        -- smallest / earliest (default)
+ORDER BY col1, col2     -- sort by multiple columns`,
+    `SELECT *
+FROM customers
+ORDER BY credit_score DESC`,
+    'ASC is the default — you can omit it. Always pair ORDER BY with LIMIT; without it, LIMIT picks rows in an arbitrary order that can change between runs.'
+  ) +
+
+  card('DISTINCT', 1,
+    'Removes duplicate rows from the result. Applies to the full set of selected columns.',
+    `SELECT DISTINCT col FROM table
+SELECT DISTINCT col1, col2 FROM table`,
+    `SELECT DISTINCT city
+FROM customers`,
+    'DISTINCT acts on the whole row — if you select two columns, a row is a duplicate only when <em>both</em> columns are identical. Selecting more columns means fewer duplicates are removed.'
+  ) +
+
+  card('LIMIT', 1,
+    'Caps the number of rows returned. Essential for top-N queries and pagination.',
+    `SELECT ...
+FROM table
+ORDER BY col DESC
+LIMIT n`,
+    `SELECT *
+FROM loans
+ORDER BY amount DESC
+LIMIT 3`,
+    'Always pair LIMIT with ORDER BY. Without ORDER BY, the database picks rows in an arbitrary order — you may get different results on every run.'
+  ) +
+
+  lvlHeader(2, 'Aggregation') +
+
+  card('Aggregate Functions', 2,
+    'Collapse many rows into a single value. Used for counts, sums, averages, and ranges.',
+    `COUNT(*)          -- count all rows (including NULLs)
+COUNT(col)        -- count non-NULL values only
+SUM(col)          -- total
+AVG(col)          -- mean
+MIN(col)          -- smallest value
+MAX(col)          -- largest value`,
+    `SELECT COUNT(*) AS loan_count,
+       SUM(amount)  AS total,
+       AVG(amount)  AS average,
+       MAX(amount)  AS largest
+FROM loans`,
+    'COUNT(*) counts every row. COUNT(col) skips NULLs — the difference matters when a column has missing values. SUM, AVG, MIN, MAX all ignore NULLs automatically.'
+  ) +
+
+  card('GROUP BY', 2,
+    'Groups rows with the same value and collapses each group using aggregate functions.',
+    `SELECT col, COUNT(*) AS cnt
+FROM table
+GROUP BY col
+
+SELECT col1, col2, SUM(val)
+FROM table
+GROUP BY col1, col2`,
+    `SELECT status, COUNT(*) AS loan_count
+FROM loans
+GROUP BY status`,
+    'Every column in SELECT must either appear in GROUP BY or be wrapped in an aggregate function (COUNT, SUM, etc.). Mixing plain columns with aggregates without GROUP BY is an error.'
+  ) +
+
+  card('HAVING', 2,
+    'Filters groups after GROUP BY — the aggregate equivalent of WHERE.',
+    `SELECT col, COUNT(*) AS cnt
+FROM table
+GROUP BY col
+HAVING COUNT(*) > 1
+
+HAVING AVG(col) > 500`,
+    `SELECT city, AVG(credit_score) AS avg_credit
+FROM customers
+GROUP BY city
+HAVING AVG(credit_score) > 700`,
+    'WHERE runs before grouping (filters raw rows). HAVING runs after grouping (filters groups). You cannot reference aggregate results like COUNT or SUM in a WHERE clause.'
+  ) +
+
+  card('CASE WHEN', 2,
+    'Returns a value per row based on conditions — a row-level if/else expression.',
+    `CASE
+  WHEN condition1 THEN value1
+  WHEN condition2 THEN value2
+  ELSE default_value
+END AS alias`,
+    `SELECT loan_id,
+  CASE
+    WHEN interest_rate > 8  THEN 'high risk'
+    WHEN interest_rate > 6  THEN 'medium risk'
+    ELSE 'standard'
+  END AS risk_label
+FROM loans`,
+    'Conditions are evaluated in order — the first match wins. Always close with END. The ELSE clause is optional but recommended: without it, unmatched rows return NULL.'
+  ) +
+
+  lvlHeader(3, 'Joins & Subqueries') +
+
+  card('INNER JOIN', 3,
+    'Combines rows from two tables where the join condition matches in both. Non-matching rows are dropped.',
+    `SELECT a.col, b.col
+FROM table_a a
+JOIN table_b b ON a.key = b.key
+
+-- Chain multiple joins:
+FROM a JOIN b ON ... JOIN c ON ...`,
+    `SELECT c.name, l.amount, l.status
+FROM loans l
+JOIN customers c ON l.customer_id = c.customer_id`,
+    'JOIN is INNER JOIN — rows with no match in either table are silently excluded. If you expect rows to always have a match but they disappear, check for mismatched keys or NULLs.'
+  ) +
+
+  card('LEFT JOIN', 3,
+    'Keeps ALL rows from the left table. Right-table columns are NULL where there is no match.',
+    `SELECT a.col, b.col
+FROM table_a a
+LEFT JOIN table_b b ON a.key = b.key
+-- b columns are NULL when no match`,
+    `SELECT c.name, COUNT(l.loan_id) AS loan_count
+FROM customers c
+LEFT JOIN loans l ON c.customer_id = l.customer_id
+GROUP BY c.name`,
+    'Use COUNT(right_table.column) not COUNT(*) when you want 0 for unmatched rows. COUNT(*) returns 1 for NULL rows (the left row still exists). To find unmatched rows: WHERE right_table.key IS NULL.'
+  ) +
+
+  card('Subquery', 3,
+    'A SELECT nested inside another query, wrapped in parentheses. The inner query runs first.',
+    `-- Scalar (returns one value):
+WHERE col > (SELECT AVG(col) FROM table)
+
+-- List (returns a column of values):
+WHERE col IN (SELECT col FROM table WHERE ...)
+
+-- Derived table (inline table):
+FROM (SELECT ... FROM table) AS alias`,
+    `SELECT *
+FROM loans
+WHERE amount > (SELECT AVG(amount) FROM loans)`,
+    'The subquery runs first and its result is passed to the outer query. Wrap it in parentheses. For computed thresholds (averages, totals) that you need inline, a subquery is the cleanest solution.'
+  ) +
+
+  card('IN / EXISTS', 3,
+    'IN checks if a value matches any item in a list or subquery result.',
+    `WHERE col IN (val1, val2, val3)
+
+WHERE col IN (
+  SELECT col FROM table WHERE condition
+)
+
+WHERE EXISTS (
+  SELECT 1 FROM table WHERE condition
+)`,
+    `SELECT name
+FROM customers
+WHERE customer_id IN (
+  SELECT customer_id
+  FROM loans
+  WHERE status = 'defaulted'
+)`,
+    'IN with a subquery is cleaner than chaining multiple OR conditions. EXISTS is faster on large datasets (stops at the first match). Use IN when you need the values; use EXISTS when you only need to check presence.'
+  ) +
+
+  lvlHeader(4, 'CTEs & Window Functions') +
+
+  card('CTE (WITH)', 4,
+    'Names a subquery at the top of your statement so you can reference it like a table.',
+    `WITH cte_name AS (
+  SELECT ...
+  FROM table
+  WHERE ...
+)
+SELECT *
+FROM cte_name
+WHERE ...
+
+-- Chain multiple CTEs:
+WITH a AS (...), b AS (... FROM a ...)
+SELECT * FROM b`,
+    `WITH customer_totals AS (
+  SELECT customer_id,
+         SUM(amount) AS total_amount
+  FROM loans
+  GROUP BY customer_id
+)
+SELECT *
+FROM customer_totals
+WHERE total_amount > 15000`,
+    'A CTE runs once and can be referenced multiple times in the same query. Think of it as giving a name to a subquery to make complex queries readable. Unlike a subquery, it is defined once at the top — not repeated inline.'
+  ) +
+
+  card('ROW_NUMBER()', 4,
+    'Assigns a unique sequential integer to each row within a partition. No ties — every row gets a distinct number.',
+    `ROW_NUMBER() OVER (
+  ORDER BY col DESC
+) AS row_num
+
+-- Reset per group with PARTITION BY:
+ROW_NUMBER() OVER (
+  PARTITION BY group_col
+  ORDER BY col DESC
+) AS row_num`,
+    `SELECT customer_id, loan_id, amount,
+  ROW_NUMBER() OVER (
+    PARTITION BY customer_id
+    ORDER BY amount DESC
+  ) AS loan_rank
+FROM loans`,
+    'The ORDER BY inside OVER controls ranking only — it does not sort the final output. Add a separate outer ORDER BY to sort results. Use WHERE row_num = 1 (inside a CTE or subquery) to get the top row per group.'
+  ) +
+
+  card('RANK / DENSE_RANK', 4,
+    'Like ROW_NUMBER but handles ties. RANK skips numbers after ties; DENSE_RANK never skips.',
+    `RANK() OVER (ORDER BY col DESC) AS rnk
+-- Ties: 1, 1, 3, 4  (skips 2)
+
+DENSE_RANK() OVER (ORDER BY col DESC) AS drnk
+-- Ties: 1, 1, 2, 3  (no skips)
+
+ROW_NUMBER() OVER (ORDER BY col DESC) AS rn
+-- Always unique: 1, 2, 3, 4`,
+    `SELECT name, credit_score,
+  RANK()       OVER (ORDER BY credit_score DESC) AS rnk,
+  DENSE_RANK() OVER (ORDER BY credit_score DESC) AS dense_rnk
+FROM customers`,
+    'Pick based on how you want ties: RANK for "competition" ranking (two silvers means no bronze), DENSE_RANK to keep ranks compact, ROW_NUMBER to always break ties arbitrarily.'
+  ) +
+
+  card('Running Total', 4,
+    'SUM with an OVER clause accumulates row by row instead of collapsing all rows into one.',
+    `SUM(col) OVER (
+  ORDER BY col2
+) AS running_total
+
+-- Reset per group:
+SUM(col) OVER (
+  PARTITION BY group_col
+  ORDER BY col2
+) AS running_total`,
+    `SELECT loan_id, amount,
+  SUM(amount) OVER (
+    ORDER BY loan_id
+  ) AS running_total
+FROM loans`,
+    'The ORDER BY inside OVER defines the accumulation order — each row\'s running total includes all rows up to and including itself. Add PARTITION BY to restart the running total for each group (e.g., per customer).'
+  ) +
+
+  card('LAG / LEAD', 4,
+    'Fetches a value from a previous (LAG) or subsequent (LEAD) row within the ordered partition.',
+    `LAG(col)  OVER (ORDER BY col2) AS prev_val
+LEAD(col) OVER (ORDER BY col2) AS next_val
+
+-- Optional: offset (default 1) and default for boundary NULLs:
+LAG(col, 1, 0) OVER (ORDER BY col2)`,
+    `SELECT payment_id, amount,
+  LAG(amount)  OVER (ORDER BY payment_id) AS prev_amount,
+  LEAD(amount) OVER (ORDER BY payment_id) AS next_amount
+FROM payments`,
+    'LAG and LEAD return NULL at the boundary (first and last row respectively) unless you supply a default as the third argument. Common use: period-over-period comparisons without a self-join.'
+  ) +
+
+  lvlHeader(1, 'Foundations — Extended') +
+
+  card('BETWEEN', 1,
+    'Tests whether a value falls within an inclusive range. Shorthand for col >= low AND col <= high.',
+    `WHERE col BETWEEN low AND high
+WHERE amount BETWEEN 5000 AND 15000
+WHERE hire_year BETWEEN 2018 AND 2021`,
+    `SELECT * FROM loans
+WHERE amount BETWEEN 5000 AND 15000`,
+    'BETWEEN is inclusive on both ends — 5000 and 15000 are included. Works on numbers, dates, and strings (alphabetical order for strings).'
+  ) +
+
+  card('LIKE', 1,
+    'Pattern matching for strings. % matches any sequence of characters; _ matches exactly one character.',
+    `WHERE col LIKE 'A%'       -- starts with A
+WHERE col LIKE '%Loan%'    -- contains Loan
+WHERE col LIKE '%an'       -- ends with an
+WHERE col LIKE '_ang%'     -- second char is a, etc.`,
+    `SELECT * FROM customers
+WHERE name LIKE 'A%'`,
+    'Case sensitivity depends on the database. To make it case-safe, wrap in UPPER(): WHERE UPPER(name) LIKE \'A%\'.'
+  ) +
+
+  card('IS NULL / IS NOT NULL', 1,
+    'Checks whether a column has a missing value. NULL is not a value — equality operators (=, !=) do not work on it.',
+    `WHERE col IS NULL        -- missing value
+WHERE col IS NOT NULL    -- has a value
+
+-- Wrong (always false):
+WHERE col = NULL`,
+    `SELECT * FROM employees
+WHERE manager_id IS NULL`,
+    'Never use = NULL or != NULL — they always return false. IS NULL and IS NOT NULL are the only correct operators for testing missing values.'
+  ) +
+
+  lvlHeader(2, 'Aggregation — Extended') +
+
+  card('UNION / UNION ALL', 2,
+    'Stacks results from two SELECT statements vertically. UNION removes duplicates; UNION ALL keeps them all.',
+    `SELECT col FROM table_a
+UNION
+SELECT col FROM table_b
+
+-- Keep duplicates (faster):
+SELECT col FROM table_a
+UNION ALL
+SELECT col FROM table_b`,
+    `SELECT city FROM customers
+UNION
+SELECT city FROM branches`,
+    'Both SELECT statements must have the same number of columns in the same order. UNION ALL is faster — use it when you know there are no duplicates or need to preserve them.'
+  ) +
+
+  card('String Functions', 2,
+    'Built-in functions for transforming and inspecting text values.',
+    `UPPER(col)              -- 'alice' → 'ALICE'
+LOWER(col)              -- 'ALICE' → 'alice'
+LENGTH(col)             -- number of characters
+CONCAT(a, b)            -- join strings
+TRIM(col)               -- remove leading/trailing spaces
+SUBSTRING(col, 1, 3)    -- extract first 3 characters`,
+    `SELECT name,
+       UPPER(name)    AS upper_name,
+       LENGTH(name)   AS name_length,
+       LOWER(city)    AS lower_city
+FROM customers`,
+    'String functions can be nested: UPPER(TRIM(name)). They can also be used in WHERE: WHERE LENGTH(name) > 10 or WHERE UPPER(city) LIKE \'SING%\'.'
+  ) +
+
+  lvlHeader(3, 'Joins & Subqueries — Extended') +
+
+  card('Self JOIN', 3,
+    'A table joined to itself using two aliases. Used for hierarchical or relational data within one table.',
+    `SELECT e.name AS employee,
+       m.name AS manager
+FROM employees e
+JOIN employees m ON e.manager_id = m.employee_id
+
+-- Keep employees with no manager:
+LEFT JOIN employees m ON e.manager_id = m.employee_id`,
+    `SELECT e.name, e.salary,
+       m.name AS manager_name
+FROM employees e
+LEFT JOIN employees m
+  ON e.manager_id = m.employee_id`,
+    'Alias the table twice — one alias for each "role". Use LEFT JOIN to keep rows with no match (e.g. top-level managers with no manager_id).'
+  ) +
+
+  card('COALESCE', 3,
+    'Returns the first non-NULL value from a list of arguments. The standard way to substitute a default for NULL.',
+    `COALESCE(col, default)
+COALESCE(col1, col2, 'fallback')
+
+-- Replace NULL with 0:
+COALESCE(SUM(p.amount), 0)
+
+-- Replace NULL with text:
+COALESCE(manager_name, 'No Manager')`,
+    `SELECT l.loan_id,
+       COALESCE(SUM(p.amount), 0) AS total_paid
+FROM loans l
+LEFT JOIN payments p ON l.loan_id = p.loan_id
+GROUP BY l.loan_id`,
+    'After a LEFT JOIN, columns from the right table are NULL for unmatched rows. COALESCE converts those NULLs to a meaningful default. It can take more than two arguments — it returns the first non-NULL.'
+  ) +
+
+  lvlHeader(4, 'CTEs & Windows — Extended') +
+
+  card('Multiple CTEs', 4,
+    'Chain multiple named subqueries in one WITH clause, separated by commas. Later CTEs can reference earlier ones.',
+    `WITH cte1 AS (
+  SELECT ...
+),
+cte2 AS (
+  SELECT ... FROM cte1 WHERE ...
+)
+SELECT * FROM cte2`,
+    `WITH loan_totals AS (
+  SELECT customer_id, SUM(amount) AS total
+  FROM loans GROUP BY customer_id
+),
+high_borrowers AS (
+  SELECT * FROM loan_totals WHERE total > 15000
+)
+SELECT * FROM high_borrowers`,
+    'Each CTE can reference any CTE defined before it in the same WITH clause. This lets you build complex transformations step by step, each with a readable name — far cleaner than deeply nested subqueries.'
+  ) +
+
+  card('Window Aggregates (PARTITION BY)', 4,
+    'Compute a group-level aggregate on every row without collapsing them — the key difference from GROUP BY.',
+    `-- GROUP BY collapses rows:
+SELECT dept, AVG(salary) FROM employees GROUP BY dept
+
+-- PARTITION BY keeps all rows:
+SELECT name, dept,
+  AVG(salary) OVER (PARTITION BY dept) AS dept_avg
+FROM employees
+
+-- Empty OVER() = aggregate over ALL rows:
+MAX(salary) OVER () AS overall_max`,
+    `SELECT name, department, salary,
+  AVG(salary) OVER (PARTITION BY department) AS dept_avg,
+  salary - AVG(salary) OVER (PARTITION BY department) AS vs_avg
+FROM employees`,
+    'PARTITION BY resets the window for each group, like GROUP BY — but keeps every original row. An empty OVER() with no PARTITION BY computes across all rows. You can combine multiple window functions in the same SELECT.'
+  ) +
+
+  lvlHeader(1, 'DML — Data Manipulation') +
+
+  card('INSERT INTO', 1,
+    'Adds new rows to a table. You can insert specific values or copy rows from another table.',
+    `-- Specify columns (recommended):
+INSERT INTO table (col1, col2, col3)
+VALUES (val1, val2, val3);
+
+-- Insert multiple rows:
+INSERT INTO table (col1, col2)
+VALUES (v1, v2), (v3, v4);
+
+-- Insert from query:
+INSERT INTO table (col1, col2)
+SELECT col1, col2 FROM other WHERE ...;`,
+    `INSERT INTO loans (loan_id, customer_id, amount, status)
+VALUES (201, 5, 12000, 'pending');`,
+    'Always list column names explicitly — it protects against future schema changes. Omitting columns inserts NULL for those not listed (or their default value).'
+  ) +
+
+  card('UPDATE', 1,
+    'Modifies existing rows. Without a WHERE clause, ALL rows in the table are updated.',
+    `UPDATE table
+SET col1 = value1,
+    col2 = value2
+WHERE condition;
+
+-- Update with arithmetic:
+UPDATE employees
+SET salary = salary * 1.10
+WHERE department = 'Sales';`,
+    `UPDATE loans
+SET status = 'closed'
+WHERE loan_id = 101;`,
+    'ALWAYS include a WHERE clause unless you intentionally want to update every row. Before running, test your WHERE condition with a SELECT first to see which rows will be affected.'
+  ) +
+
+  card('DELETE', 1,
+    'Removes rows from a table. Without a WHERE clause, ALL rows are deleted (table remains, data gone).',
+    `DELETE FROM table
+WHERE condition;
+
+-- Delete all rows (keeps table structure):
+DELETE FROM table;
+
+-- TRUNCATE (faster bulk delete, not in all DBs):
+TRUNCATE TABLE table;`,
+    `DELETE FROM loans
+WHERE status = 'closed'
+  AND amount < 1000;`,
+    'Test your WHERE with a SELECT first. DELETE is permanent (unless in a transaction). TRUNCATE is faster than DELETE for clearing entire tables but cannot be rolled back in most databases.'
+  ) +
+
+  lvlHeader(1, 'DDL — Data Definition') +
+
+  card('CREATE TABLE', 1,
+    'Creates a new table and defines its columns, data types, and constraints.',
+    `CREATE TABLE table_name (
+  col1  INT           PRIMARY KEY,
+  col2  VARCHAR(100)  NOT NULL,
+  col3  DECIMAL(10,2) DEFAULT 0,
+  col4  DATE,
+  col5  BOOLEAN
+);
+
+-- Common data types:
+-- INT, BIGINT         → whole numbers
+-- DECIMAL(p,s)        → fixed precision
+-- VARCHAR(n), TEXT    → variable text
+-- DATE, DATETIME      → dates/timestamps
+-- BOOLEAN             → true/false`,
+    `CREATE TABLE products (
+  product_id   INT          PRIMARY KEY,
+  name         VARCHAR(100) NOT NULL,
+  price        DECIMAL(10,2),
+  in_stock     BOOLEAN      DEFAULT TRUE,
+  created_at   DATE
+);`,
+    'Choose the narrowest type that fits: VARCHAR(100) not TEXT for short strings; DECIMAL not FLOAT for money (avoids floating-point rounding). Constraints defined here are enforced on every insert/update.'
+  ) +
+
+  card('ALTER TABLE', 1,
+    'Modifies an existing table structure: add/drop/modify columns or add/drop constraints.',
+    `-- Add a column:
+ALTER TABLE table ADD column_name datatype;
+
+-- Drop a column:
+ALTER TABLE table DROP COLUMN column_name;
+
+-- Modify a column type (MySQL/Oracle):
+ALTER TABLE table MODIFY COLUMN col datatype;
+
+-- Rename a column (SQL Server / PG):
+ALTER TABLE table RENAME COLUMN old TO new;
+
+-- Add a constraint:
+ALTER TABLE table ADD PRIMARY KEY (col);
+ALTER TABLE table ADD FOREIGN KEY (col)
+  REFERENCES other_table(col);`,
+    `ALTER TABLE employees
+ADD department VARCHAR(50);
+
+ALTER TABLE loans
+DROP COLUMN notes;`,
+    'ALTER TABLE is a permanent structural change. On large tables, adding/removing columns can lock the table. Always test on dev first. Dropping a column is irreversible — data in that column is gone.'
+  ) +
+
+  card('DROP TABLE', 1,
+    'Permanently deletes a table and all its data. This cannot be undone.',
+    `DROP TABLE table_name;
+
+-- Only drop if it exists (no error):
+DROP TABLE IF EXISTS table_name;
+
+-- DROP vs TRUNCATE vs DELETE:
+-- DELETE   → removes rows, table remains, can filter with WHERE
+-- TRUNCATE → removes all rows, table remains, cannot filter
+-- DROP     → removes the entire table structure and data`,
+    `DROP TABLE IF EXISTS temp_import;`,
+    'DROP TABLE is irreversible without a backup. Use IF EXISTS to avoid errors in migration scripts when the table may or may not exist. In production, prefer a migration tool that tracks schema history.'
+  ) +
+
+  lvlHeader(2, 'Constraints') +
+
+  card('NOT NULL & UNIQUE', 2,
+    'NOT NULL prevents a column from storing NULL values. UNIQUE ensures all values in a column are distinct.',
+    `-- On create:
+CREATE TABLE t (
+  col1 VARCHAR(50) NOT NULL,
+  col2 VARCHAR(50) UNIQUE,
+  col3 VARCHAR(50) NOT NULL UNIQUE
+);
+
+-- Add to existing table:
+ALTER TABLE t ADD UNIQUE (col2);
+ALTER TABLE t MODIFY col1 VARCHAR(50) NOT NULL;`,
+    `CREATE TABLE customers (
+  customer_id INT          NOT NULL,
+  email       VARCHAR(100) NOT NULL UNIQUE,
+  name        VARCHAR(100) NOT NULL
+);`,
+    'NOT NULL and UNIQUE are the two most common column-level constraints. Combining them (col NOT NULL UNIQUE) is equivalent to a key. UNIQUE allows one NULL value (NULL is not equal to NULL, so it does not violate uniqueness in most databases).'
+  ) +
+
+  card('PRIMARY KEY & FOREIGN KEY', 2,
+    'PRIMARY KEY uniquely identifies each row. FOREIGN KEY links rows in one table to rows in another, enforcing referential integrity.',
+    `-- Primary key (single column):
+CREATE TABLE t (
+  id INT PRIMARY KEY,
+  ...
+);
+
+-- Composite primary key:
+PRIMARY KEY (col1, col2)
+
+-- Foreign key:
+CREATE TABLE orders (
+  order_id    INT PRIMARY KEY,
+  customer_id INT,
+  FOREIGN KEY (customer_id)
+    REFERENCES customers(customer_id)
+    ON DELETE CASCADE
+);`,
+    `CREATE TABLE payments (
+  payment_id INT PRIMARY KEY,
+  loan_id    INT NOT NULL,
+  amount     DECIMAL(10,2),
+  FOREIGN KEY (loan_id)
+    REFERENCES loans(loan_id)
+);`,
+    'A PRIMARY KEY is automatically NOT NULL and UNIQUE. Foreign keys prevent inserting a value that doesn\'t exist in the parent table. ON DELETE CASCADE auto-deletes child rows when the parent is deleted; ON DELETE SET NULL nulls the foreign key instead.'
+  ) +
+
+  card('CHECK & DEFAULT', 2,
+    'CHECK validates column values against a condition. DEFAULT provides a fallback value when no value is supplied.',
+    `-- CHECK constraint:
+CREATE TABLE t (
+  age   INT CHECK (age >= 0),
+  score INT CHECK (score BETWEEN 0 AND 100),
+  tier  VARCHAR(10) CHECK (tier IN ('A','B','C'))
+);
+
+-- DEFAULT:
+CREATE TABLE t (
+  status     VARCHAR(20) DEFAULT 'pending',
+  created_at DATE        DEFAULT CURRENT_DATE,
+  is_active  BOOLEAN     DEFAULT TRUE
+);`,
+    `CREATE TABLE loans (
+  loan_id  INT  PRIMARY KEY,
+  amount   DECIMAL(10,2) CHECK (amount > 0),
+  status   VARCHAR(20)   DEFAULT 'pending'
+);`,
+    'CHECK constraints run on every INSERT and UPDATE. If a check fails, the row is rejected. DEFAULT values are used only when the column is omitted from the INSERT — an explicit NULL value overrides the default.'
+  ) +
+
+  lvlHeader(2, 'Views') +
+
+  card('CREATE VIEW', 2,
+    'Saves a SELECT query as a named virtual table. The view stores the query, not the data — it runs fresh each time it is queried.',
+    `CREATE VIEW view_name AS
+SELECT col1, col2
+FROM table
+WHERE condition;
+
+-- Query a view like a table:
+SELECT * FROM view_name;
+SELECT col1 FROM view_name WHERE ...;
+
+-- Recreate (replace existing):
+CREATE OR REPLACE VIEW view_name AS
+SELECT ...;`,
+    `CREATE VIEW active_loans AS
+SELECT l.loan_id, c.name, l.amount
+FROM loans l
+JOIN customers c ON l.customer_id = c.customer_id
+WHERE l.status = 'active';
+
+SELECT * FROM active_loans;`,
+    'Views simplify complex queries by giving them a name. They do not store data — they re-run the query on every access. Use views to hide complexity, limit column access, or create reusable query building blocks.'
+  ) +
+
+  card('ALTER VIEW & DROP VIEW', 2,
+    'Modifies or removes a view definition. Dropping a view removes the query, not any underlying data.',
+    `-- Modify a view (most databases):
+ALTER VIEW view_name AS
+SELECT ...;
+
+-- Or replace entirely:
+CREATE OR REPLACE VIEW view_name AS
+SELECT ...;
+
+-- Remove a view:
+DROP VIEW view_name;
+DROP VIEW IF EXISTS view_name;`,
+    `-- Update the active_loans view to include branch:
+CREATE OR REPLACE VIEW active_loans AS
+SELECT l.loan_id, c.name, l.amount, b.city
+FROM loans l
+JOIN customers c ON l.customer_id = c.customer_id
+JOIN branches b  ON l.branch_id  = b.branch_id
+WHERE l.status = 'active';`,
+    'Prefer CREATE OR REPLACE VIEW over dropping and recreating — it preserves any permissions granted on the view. Dropping a view has no effect on the underlying tables.'
+  ) +
+
+  lvlHeader(3, 'More JOINs') +
+
+  card('RIGHT JOIN', 3,
+    'Keeps ALL rows from the right (second) table. Left-table columns are NULL where there is no match. Rarely used — most queries can be rewritten with LEFT JOIN.',
+    `SELECT a.col, b.col
+FROM table_a a
+RIGHT JOIN table_b b ON a.key = b.key
+-- a columns are NULL when no match
+
+-- Equivalent with LEFT JOIN (tables swapped):
+SELECT a.col, b.col
+FROM table_b b
+LEFT JOIN table_a a ON a.key = b.key`,
+    `SELECT l.loan_id, b.city
+FROM loans l
+RIGHT JOIN branches b ON l.branch_id = b.branch_id;`,
+    'RIGHT JOIN is rarely written in practice — most developers reorder the tables and use LEFT JOIN instead, since we instinctively read "keep everything from the left table." Both are equivalent when tables are swapped.'
+  ) +
+
+  card('FULL OUTER JOIN', 3,
+    'Returns all rows from both tables. NULLs fill in where there is no match on either side.',
+    `SELECT a.col, b.col
+FROM table_a a
+FULL OUTER JOIN table_b b ON a.key = b.key
+-- Rows with no match appear with NULLs on the missing side
+
+-- MySQL workaround (no FULL OUTER JOIN):
+SELECT * FROM a LEFT JOIN b ON a.key = b.key
+UNION
+SELECT * FROM a RIGHT JOIN b ON a.key = b.key;`,
+    `SELECT c.name, l.loan_id
+FROM customers c
+FULL OUTER JOIN loans l ON c.customer_id = l.customer_id;`,
+    'FULL OUTER JOIN shows rows that have no match on either side — useful for finding orphans in both directions. MySQL does not support it natively; use UNION of LEFT JOIN and RIGHT JOIN as the workaround.'
+  ) +
+
+  card('CROSS JOIN', 3,
+    'Produces every combination of rows from two tables (cartesian product). No join condition needed.',
+    `SELECT a.col, b.col
+FROM table_a a
+CROSS JOIN table_b b;
+
+-- Equivalent implicit syntax:
+SELECT a.col, b.col
+FROM table_a a, table_b b;
+
+-- Result size = rows_in_a × rows_in_b`,
+    `SELECT e.name, b.city
+FROM employees e
+CROSS JOIN branches b;`,
+    'CROSS JOIN produces huge result sets — 100 rows × 200 rows = 20,000 rows. Use it only when you need every combination, such as generating a date × product grid. Accidental CROSS JOIN (missing ON clause) is a common performance bug.'
+  ) +
+
+  lvlHeader(3, 'Advanced Subquery Operators') +
+
+  card('ANY / ALL', 3,
+    'Compare a value against a set returned by a subquery. ANY returns true if any value matches; ALL requires all values to match.',
+    `-- ANY: true if at least one comparison is true
+WHERE col > ANY (SELECT val FROM table WHERE ...)
+WHERE col = ANY (SELECT val FROM table WHERE ...)
+
+-- ALL: true only if every comparison is true
+WHERE col > ALL (SELECT val FROM table WHERE ...)
+
+-- ANY is equivalent to IN for = operator:
+WHERE col = ANY (...)  ≡  WHERE col IN (...)`,
+    `-- Loans larger than at least one payment:
+SELECT loan_id FROM loans
+WHERE amount > ANY (SELECT amount FROM payments);
+
+-- Loans larger than every payment:
+SELECT loan_id FROM loans
+WHERE amount > ALL (SELECT amount FROM payments);`,
+    'ANY is equivalent to IN when using =. ALL is a stricter condition — it is true only when the comparison holds against every row in the subquery. An empty subquery makes ALL return true and ANY return false.'
+  ) +
+
+  card('Wildcards (Advanced)', 3,
+    'Pattern characters used with LIKE for flexible string matching.',
+    `% — matches zero or more characters
+_ — matches exactly one character
+
+-- SQL Server / MS Access only:
+[abc]  — matches one character in the set (a, b, or c)
+[a-z]  — matches one character in the range
+[^abc] — matches one character NOT in the set
+
+-- Examples:
+WHERE col LIKE 'A%'      -- starts with A
+WHERE col LIKE '%@%.%'   -- looks like an email
+WHERE col LIKE '_h%'     -- second char is 'h'
+WHERE col LIKE '[JM]%'   -- starts with J or M (SQL Server)`,
+    `SELECT * FROM customers
+WHERE email LIKE '%@gmail.com';
+
+SELECT * FROM employees
+WHERE name LIKE '_a%';   -- second letter is 'a'`,
+    'Use LIKE only when you need pattern matching — it is slower than = on indexed columns. Anchoring the pattern at the start (\'A%\') can use an index; a leading wildcard (\'%a\') always does a full scan.'
+  ) +
+
+  lvlHeader(3, 'Copy & Transform Data') +
+
+  card('SELECT INTO', 3,
+    'Creates a new table and populates it with the result of a SELECT query in one step. Syntax varies by database.',
+    `-- SQL Server / MS Access:
+SELECT col1, col2
+INTO new_table
+FROM source_table
+WHERE condition;
+
+-- Create empty table (no rows):
+SELECT * INTO new_table
+FROM source WHERE 1 = 0;
+
+-- PostgreSQL equivalent:
+CREATE TABLE new_table AS
+SELECT * FROM source_table;`,
+    `-- SQL Server: copy active customers to archive
+SELECT *
+INTO customers_archive
+FROM customers
+WHERE is_active = FALSE;`,
+    'SELECT INTO creates a new table — it will fail if the table already exists. For MySQL/PostgreSQL use CREATE TABLE AS SELECT instead. Useful for creating snapshots, staging tables, or archiving rows.'
+  ) +
+
+  card('INSERT INTO SELECT', 3,
+    'Copies rows from one table and inserts them into an existing table. The target table must already exist.',
+    `INSERT INTO target_table (col1, col2)
+SELECT col1, col2
+FROM source_table
+WHERE condition;
+
+-- Copy all rows (columns must match):
+INSERT INTO target_table
+SELECT * FROM source_table;`,
+    `INSERT INTO payments (loan_id, amount, payment_date)
+SELECT loan_id, amount, CURRENT_DATE
+FROM pending_transfers
+WHERE approved = TRUE;`,
+    'Unlike SELECT INTO, the target table must already exist. Column order and data types must be compatible between the SELECT output and the INSERT target. Great for migrating, archiving, or seeding tables from other data sources.'
+  ) +
+
+  lvlHeader(4, 'NULL Handling') +
+
+  card('NULLIF', 4,
+    'Returns NULL if two expressions are equal; otherwise returns the first expression. The inverse of COALESCE.',
+    `NULLIF(expr1, expr2)
+
+-- Returns NULL if expr1 = expr2:
+NULLIF(col, 0)          -- returns NULL when col is 0
+NULLIF(col, 'N/A')      -- returns NULL when col is 'N/A'
+
+-- Common use — prevent divide by zero:
+col / NULLIF(denominator, 0)
+-- If denominator is 0, division becomes col / NULL = NULL`,
+    `SELECT loan_id,
+  amount / NULLIF(term_months, 0) AS monthly_payment
+FROM loans;`,
+    'NULLIF prevents divide-by-zero errors: instead of crashing, the result becomes NULL which can be handled with COALESCE. Think of COALESCE as "replace NULL with value" and NULLIF as "replace value with NULL".'
+  ) +
+
+  card('IFNULL / ISNULL / NVL', 4,
+    'Database-specific shorthand for replacing NULL with a default value. COALESCE is the SQL-standard equivalent that works everywhere.',
+    `-- MySQL:
+IFNULL(col, default_value)
+
+-- SQL Server:
+ISNULL(col, default_value)
+
+-- Oracle:
+NVL(col, default_value)
+
+-- Standard SQL (works in all databases):
+COALESCE(col, default_value)
+
+-- All four return default_value when col IS NULL`,
+    `-- MySQL:
+SELECT IFNULL(manager_id, 0) AS mgr FROM employees;
+
+-- Standard SQL equivalent:
+SELECT COALESCE(manager_id, 0) AS mgr FROM employees;`,
+    'Prefer COALESCE in new code — it is ANSI SQL and works across all databases. COALESCE also accepts more than two arguments (it returns the first non-NULL from the list), while IFNULL/ISNULL/NVL only take two.'
+  ) +
+
+  lvlHeader(4, 'Aliases & Date Functions') +
+
+  card('Aliases (AS)', 4,
+    'Gives a column or table expression a temporary name used only in the output. Column aliases appear in the result header; table aliases shorten join syntax.',
+    `-- Column alias:
+SELECT col AS alias_name FROM table;
+SELECT col alias_name FROM table;   -- AS is optional
+
+-- Table alias (required for self-joins):
+SELECT a.col, b.col
+FROM table AS a
+JOIN table AS b ON a.key = b.key;
+
+-- Alias computed expressions:
+SELECT amount * 1.1 AS amount_with_tax,
+       UPPER(name) AS name_upper
+FROM table;`,
+    `SELECT loan_id      AS id,
+       amount        AS loan_amount,
+       amount * 0.07 AS interest
+FROM loans AS l
+JOIN customers AS c ON l.customer_id = c.customer_id;`,
+    'Column aliases defined in SELECT cannot be used in WHERE, GROUP BY, or HAVING in most databases (they have not been computed yet). Use the alias only in ORDER BY or in an outer query. Table aliases are visible throughout the entire query.'
+  ) +
+
+  card('Date Functions', 4,
+    'Built-in functions for working with date and time values. Names differ between databases but concepts are universal.',
+    `-- Get current date / timestamp:
+CURRENT_DATE          -- standard SQL
+CURRENT_TIMESTAMP     -- date + time, standard SQL
+NOW()                 -- MySQL / PostgreSQL
+GETDATE()             -- SQL Server
+
+-- Extract parts:
+YEAR(col)             -- MySQL / SQL Server
+MONTH(col)
+DAY(col)
+EXTRACT(YEAR FROM col)   -- standard SQL
+
+-- Date arithmetic:
+DATEDIFF(end, start)     -- MySQL: days between
+DATEADD(day, n, col)     -- SQL Server: add n days
+col + INTERVAL '1 month' -- PostgreSQL / MySQL`,
+    `-- Loans created in the last 30 days:
+SELECT *
+FROM loans
+WHERE created_at >= CURRENT_DATE - INTERVAL '30' DAY;
+
+-- Extract year from date:
+SELECT YEAR(created_at) AS year, COUNT(*) AS cnt
+FROM loans
+GROUP BY YEAR(created_at);`,
+    'Date functions are the most database-specific part of SQL. When writing cross-database code, use CURRENT_DATE and CURRENT_TIMESTAMP (ANSI standard) and EXTRACT() for parsing. For date arithmetic, check the target database\'s syntax — it varies significantly.'
+  );
+}
+
+// ─── PRACTICE MODE ───────────────────────────────────────────────────────────
+
+const practiceState = { concept: null, qIndex: 0 };
+
+function renderPractice() {
+  document.getElementById('practice-content').innerHTML = buildPracticeHTML();
+  initHighlighters();
+}
+
+function buildPracticeHTML() {
+  if (!practiceState.concept) {
+    let html = '<div class="card"><div class="section-title">Choose a Concept</div>';
+    [1,2,3,4].forEach(lvl => {
+      html += `<div style="margin-bottom:14px">
+        <div style="font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">Lvl ${lvl} — ${CURRICULUM[lvl].name}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">`;
+      CURRICULUM[lvl].concepts.forEach(c => {
+        html += `<button onclick="selectPracticeConcept('${c}')" style="background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:13px;font-weight:600;color:var(--text);cursor:pointer">${CONCEPT_LABELS[c]}</button>`;
+      });
+      html += '</div></div>';
+    });
+    html += '</div>';
+    return html;
+  }
+
+  const concept = practiceState.concept;
+  const qs = QUESTIONS.filter(q => q.concept === concept);
+  const idx = practiceState.qIndex % qs.length;
+  const qdef = qs[idx];
+
+  return `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <button onclick="selectPracticeConcept(null)" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer">← Back</button>
+      <span class="pill concept">${CONCEPT_LABELS[concept]}</span>
+      <span style="font-size:12px;color:var(--text-dim)">${idx + 1} / ${qs.length}</span>
+    </div>
+    <div class="card">
+      <div class="q-prompt" style="margin-bottom:12px">${qdef.prompt}</div>
+      <div class="editor-wrap">
+        <textarea id="ta-practice" placeholder="Write your SQL here..." onkeydown="handleTabKey(event)"></textarea>
+        <pre class="hl-layer" id="hl-practice"></pre>
+      </div>
+      <button class="run-btn" onclick="submitPractice('${qdef.id}')">▶ Run &amp; Check</button>
+      <div class="feedback" id="fb-practice"></div>
+      <div class="result-preview" id="rp-practice"></div>
+    </div>
+    ${qs.length > 1 ? `<div style="display:flex;gap:8px">
+      <button onclick="shiftPracticeQ(-1)" style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-weight:600;cursor:pointer">← Prev</button>
+      <button onclick="shiftPracticeQ(1)" style="flex:1;padding:12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-weight:600;cursor:pointer">Next →</button>
+    </div>` : ''}`;
+}
+
+function selectPracticeConcept(concept) {
+  practiceState.concept = concept;
+  practiceState.qIndex = 0;
+  renderPractice();
+}
+
+function shiftPracticeQ(dir) {
+  const qs = QUESTIONS.filter(q => q.concept === practiceState.concept);
+  practiceState.qIndex = ((practiceState.qIndex + dir) + qs.length) % qs.length;
+  renderPractice();
+}
+
+function submitPractice(qId) {
+  const qdef = QUESTIONS.find(q => q.id === qId);
+  if (!qdef) return;
+  const ta = document.getElementById('ta-practice');
+  const fb = document.getElementById('fb-practice');
+  const rp = document.getElementById('rp-practice');
+  const sql = ta.value.trim();
+  if (!sql) { fb.className = 'feedback fail show'; fb.innerHTML = 'Enter a SQL query.'; return; }
+
+  const ev = evaluate(qdef, sql);
+  if (ev.pass) {
+    ta.className = 'success';
+    fb.className = 'feedback pass show';
+    fb.innerHTML = `Correct! (${ev.result.length} row${ev.result.length !== 1 ? 's' : ''})`;
+    rp.className = 'result-preview show';
+    rp.innerHTML = buildResultTable(ev.result);
+  } else {
+    ta.className = 'error';
+    fb.className = 'feedback fail show';
+    const msg = ev.hint || 'Not quite right.';
+    fb.innerHTML = `<div>${msg}</div>
+      <button onclick="showPracticeSolution('${qId}')" style="display:block;margin-top:10px;background:none;border:1px solid var(--warning);color:var(--warning);border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:600">Show Solution</button>`;
+    if (!ev.error) {
+      rp.className = 'result-preview show';
+      const yourRows = ev.result || [];
+      rp.innerHTML =
+        `<div style="font-size:11px;color:var(--error);font-weight:700;margin-bottom:4px">YOUR RESULT (${yourRows.length} row${yourRows.length !== 1 ? 's' : ''})</div>` +
+        buildResultTable(yourRows) +
+        `<div style="font-size:11px;color:var(--accent);font-weight:700;margin:10px 0 4px">EXPECTED (${qdef.expected.length} row${qdef.expected.length !== 1 ? 's' : ''})</div>` +
+        buildResultTable(qdef.expected);
+    } else {
+      rp.className = 'result-preview';
+    }
+  }
+}
+
+function showPracticeSolution(qId) {
+  const qdef = QUESTIONS.find(q => q.id === qId);
+  if (!qdef) return;
+  const ta = document.getElementById('ta-practice');
+  ta.value = qdef.solution;
+  ta.className = '';
+  const fb = document.getElementById('fb-practice');
+  fb.className = 'feedback fail show';
+  fb.innerHTML = `<div style="color:var(--warning)">Solution revealed — study it, then run it.</div>`;
+  document.getElementById('rp-practice').className = 'result-preview';
 }
 
 // ─── RENDER PROGRESS TAB ─────────────────────────────────────────────────────
@@ -1415,7 +3437,7 @@ function renderProgress() {
 
   // Concept list — all concepts across all levels
   let html = '';
-  [1,2,3,4].forEach(lvl => {
+  [1,2,3,4,5].forEach(lvl => {
     CURRICULUM[lvl].concepts.forEach(concept => {
       const conceptQs = QUESTIONS.filter(q=>q.concept===concept);
       const done = conceptQs.some(q=>progress.completedQuestions.includes(q.id));
@@ -1472,6 +3494,8 @@ function switchTab(name) {
   if (name === 'progress') renderProgress();
   if (name === 'schema') renderSchema();
   if (name === 'today') renderToday();
+  if (name === 'practice') renderPractice();
+  if (name === 'wiki') renderWiki();
 }
 
 // ─── RESET ───────────────────────────────────────────────────────────────────
@@ -1486,6 +3510,41 @@ document.getElementById('reset-btn').addEventListener('click', () => {
     switchTab('today');
   }
 });
+
+// ─── SQL HIGHLIGHTING ────────────────────────────────────────────────────────
+
+const SQL_KW = /\b(SELECT|FROM|WHERE|AND|OR|NOT|AS|ON|JOIN|LEFT|RIGHT|INNER|OUTER|FULL|CROSS|GROUP\s+BY|ORDER\s+BY|HAVING|LIMIT|OFFSET|DISTINCT|UNION|ALL|INSERT|UPDATE|DELETE|SET|INTO|VALUES|CREATE|DROP|TABLE|WITH|PARTITION\s+BY|OVER|CASE|WHEN|THEN|ELSE|END|IN|EXISTS|BETWEEN|LIKE|IS|NULL|ASC|DESC|BY)\b/gi;
+const SQL_FN = /\b(COUNT|SUM|AVG|MIN|MAX|ROW_NUMBER|RANK|DENSE_RANK|LAG|LEAD|NTILE|FIRST_VALUE|LAST_VALUE|COALESCE|NULLIF|CAST|CONVERT|ROUND|ABS|UPPER|LOWER|TRIM|LENGTH|SUBSTR|SUBSTRING|CONCAT|REPLACE|ISNULL|NVL)\s*(?=\()/gi;
+
+function highlightSQL(text) {
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  return escaped
+    .replace(/('(?:[^'\\]|\\.)*')/g, '<span class="str">$1</span>')
+    .replace(SQL_FN, m => `<span class="fn">${m}</span>`)
+    .replace(SQL_KW, m => `<span class="kw">${m}</span>`)
+    .replace(/\b(\d+(?:\.\d+)?)\b/g, '<span class="num">$1</span>');
+}
+
+function syncHL(ta, hl) {
+  hl.innerHTML = highlightSQL(ta.value) + '\n';
+  hl.scrollTop = ta.scrollTop;
+  hl.scrollLeft = ta.scrollLeft;
+}
+
+function initHighlighters() {
+  document.querySelectorAll('.editor-wrap').forEach(wrap => {
+    const ta = wrap.querySelector('textarea');
+    const hl = wrap.querySelector('.hl-layer');
+    if (!ta || !hl) return;
+    syncHL(ta, hl);
+    ta.addEventListener('input', () => syncHL(ta, hl));
+    ta.addEventListener('scroll', () => { hl.scrollTop = ta.scrollTop; });
+  });
+}
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 
