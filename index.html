@@ -2322,7 +2322,7 @@ function renderToday() {
   const session = getOrCreateSession();
   const concept = session.concept;
   const dayNumber = progress.completedSessions + 1;
-  const allPass = ['q1','q2','q3','q4','q5'].every(k => !session[k] || session[k].status === 'pass');
+  const allPass = ['q1','q2','q3','q4','q5'].every(k => !session[k] || !session[k].id || session[k].status === 'pass');
 
   let html = `<div class="card">
     <div class="session-meta">
@@ -2443,7 +2443,7 @@ function submitAnswer(qKey) {
     const nextKey = NEXT_Q[qKey];
     if (nextKey && session[nextKey]) session[nextKey].status = 'pending';
 
-    const allDone = ['q1','q2','q3','q4','q5'].every(k => !session[k] || session[k].status === 'pass');
+    const allDone = ['q1','q2','q3','q4','q5'].every(k => !session[k] || !session[k].id || session[k].status === 'pass');
     if (allDone) completeSession();
 
     saveProgress(progress);
