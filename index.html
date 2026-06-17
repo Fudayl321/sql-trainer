@@ -329,6 +329,37 @@
       margin: 10px 0;
     }
 
+    /* Day Gate */
+    .gate-card {
+      background: linear-gradient(135deg, rgba(0,212,255,0.08), rgba(99,102,241,0.08));
+      border: 1px solid var(--accent2);
+      border-radius: 12px;
+      padding: 18px 16px;
+      margin-bottom: 12px;
+    }
+    .gate-card.gate-failed {
+      background: rgba(239,68,68,0.07);
+      border-color: var(--error);
+    }
+    .gate-card h3 { font-size: 16px; margin: 0 0 4px; }
+    .gate-card p { font-size: 14px; color: var(--text-dim); margin: 0 0 14px; }
+    .gate-card.gate-failed p { margin: 0; }
+    .gate-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .gate-icon { font-size: 26px; line-height: 1; flex-shrink: 0; }
+    .gate-q {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-top: 12px;
+    }
+    .gate-q.gate-q-done { opacity: 0.75; }
+
     /* Progress tab */
     .progress-bar-wrap {
       background: var(--surface2);
@@ -1852,7 +1883,8 @@ const DEFAULT_PROGRESS = {
   lastStreakDate: null,
   completedSessions: 0,
   completedQuestions: [],
-  currentSession: null
+  currentSession: null,
+  gateUnlockedSession: -1
 };
 
 function loadProgress() {
@@ -1930,6 +1962,11 @@ function generateSession() {
 
 function getOrCreateSession() {
   const today = getTodayString();
+  // Gate unlock: if the gate was just passed for this session count, allow immediate generation
+  if (progress.gateUnlockedSession === progress.completedSessions && progress.currentSession &&
+      progress.currentSession.gateUnlocked) {
+    return progress.currentSession;
+  }
   if (progress.lastSessionDate === today && progress.currentSession) {
     return progress.currentSession;
   }
@@ -1987,6 +2024,156 @@ function completeSession() {
   }
 
   saveProgress(progress);
+}
+
+// ─── DAY GATE ────────────────────────────────────────────────────────────────
+
+// Ephemeral gate state — not persisted; resets on page reload or new session
+let gateState = null; // null | { questions: [...], current: 0, attempts: [0,0], passed: [false,false], closed: false }
+
+function initGate() {
+  const level = progress.level;
+  const concepts = CURRICULUM[level].concepts;
+  const nextIndex = progress.completedSessions % concepts.length;
+  const nextConcept = concepts[nextIndex];
+  const done = progress.completedQuestions;
+
+  const candidates = QUESTIONS.filter(q =>
+    q.level === level &&
+    q.concept === nextConcept &&
+    (q.type === 'warmup' || q.type === 'consolidate') &&
+    !done.includes(q.id)
+  );
+
+  // Need at least 2 gate questions; fall back to including seen ones if needed
+  const pool = candidates.length >= 2 ? candidates :
+    QUESTIONS.filter(q => q.level === level && q.concept === nextConcept &&
+      (q.type === 'warmup' || q.type === 'consolidate'));
+
+  if (pool.length < 2) return null; // not enough questions — no gate
+
+  const gq1 = pool[0];
+  const gq2 = pool.find(q => q.id !== gq1.id) || pool[1];
+
+  return {
+    concept: nextConcept,
+    questions: [gq1, gq2],
+    current: 0,       // index of active gate question (0 or 1)
+    attempts: [0, 0],
+    passed: [false, false],
+    closed: false     // true when gate failed (exhausted attempts on either Q)
+  };
+}
+
+function submitGateAnswer(gIdx) {
+  if (!gateState || gateState.closed) return;
+
+  const qdef = gateState.questions[gIdx];
+  const ta = document.getElementById(`gate-ta-${gIdx}`);
+  const fb = document.getElementById(`gate-fb-${gIdx}`);
+  const sql = ta ? ta.value.trim() : '';
+
+  if (!sql) {
+    fb.className = 'feedback fail show';
+    fb.innerHTML = 'Please enter a SQL query.';
+    return;
+  }
+
+  gateState.attempts[gIdx] += 1;
+  const ev = evaluate(qdef, sql);
+
+  if (ev.pass) {
+    gateState.passed[gIdx] = true;
+    ta.disabled = true;
+    ta.className = 'success';
+    fb.className = 'feedback pass show';
+    fb.innerHTML = `Correct! Your query returned ${ev.result.length} row(s).`;
+
+    if (gIdx === 0 && !gateState.passed[1]) {
+      // Advance to gate Q2
+      gateState.current = 1;
+      renderGate();
+      return;
+    }
+
+    if (gateState.passed[0] && gateState.passed[1]) {
+      // Both passed — unlock next session
+      progress.gateUnlockedSession = progress.completedSessions;
+      const nextSession = generateSession();
+      nextSession.gateUnlocked = true;
+      progress.currentSession = nextSession;
+      saveProgress(progress);
+      gateState = null;
+      renderToday();
+      renderProgress();
+      return;
+    }
+  } else {
+    ta.className = 'error';
+    fb.className = 'feedback fail show';
+    let msg = ev.hint || 'Not quite right.';
+    if (gateState.attempts[gIdx] >= 3) {
+      // Gate failed
+      gateState.closed = true;
+      renderGate();
+      return;
+    }
+    fb.innerHTML = `<div>${msg}</div><div class="hint" style="margin-top:6px">Attempts: ${gateState.attempts[gIdx]}/3</div>`;
+  }
+}
+
+function renderGate() {
+  const container = document.getElementById('gate-container');
+  if (!container) return;
+  if (!gateState) { container.innerHTML = ''; return; }
+
+  if (gateState.closed) {
+    container.innerHTML = `<div class="gate-card gate-failed">
+      <h3>Gate closed</h3>
+      <p>Great try! Come back tomorrow to continue.</p>
+    </div>`;
+    return;
+  }
+
+  const conceptLabel = CONCEPT_LABELS[gateState.concept] || gateState.concept;
+  let html = `<div class="gate-card">
+    <div class="gate-header">
+      <span class="gate-icon">🔓</span>
+      <div>
+        <h3>Gate: Unlock tomorrow's topic now?</h3>
+        <p style="margin:0;font-size:13px;color:var(--text-dim)">Answer 2 questions on <strong>${conceptLabel}</strong> to start it today.</p>
+      </div>
+    </div>`;
+
+  [0, 1].forEach(gIdx => {
+    if (gIdx > gateState.current) return; // show Q2 only after Q1 answered
+    const qdef = gateState.questions[gIdx];
+    const isDone = gateState.passed[gIdx];
+    html += `<div class="gate-q${isDone ? ' gate-q-done' : ''}">
+      <div class="q-header">
+        <span class="q-label">Gate Q${gIdx + 1}</span>
+        ${isDone ? '<span class="pill pass">✓ Pass</span>' : `<span style="font-size:12px;color:var(--text-dim)">Max 3 attempts</span>`}
+      </div>
+      <div class="q-prompt">${qdef.prompt}</div>`;
+
+    if (!isDone) {
+      html += `<div class="editor-wrap">
+        <textarea id="gate-ta-${gIdx}" placeholder="Write your SQL here..." onkeydown="handleTabKey(event)"></textarea>
+        <pre class="hl-layer" id="gate-hl-${gIdx}"></pre>
+      </div>
+      <button class="run-btn" onclick="submitGateAnswer(${gIdx})">▶ Run &amp; Check</button>`;
+    } else {
+      html += `<div class="editor-wrap">
+        <textarea disabled class="success">${qdef.solution}</textarea>
+      </div>`;
+    }
+    html += `<div class="feedback" id="gate-fb-${gIdx}"></div>
+    </div>`;
+  });
+
+  html += `</div>`;
+  container.innerHTML = html;
+  initHighlighters();
 }
 
 // ─── EVALUATION ENGINE ───────────────────────────────────────────────────────
@@ -2122,7 +2309,8 @@ function renderToday() {
       <h2>Session complete! 🎉</h2>
       <div class="streak-display">🔥 ${progress.streak}</div>
       <p>Come back tomorrow for your next session.</p>
-    </div>`;
+    </div>
+    <div id="gate-container"></div>`;
   }
 
   ['q1','q2','q3','q4','q5'].forEach((k, idx) => {
@@ -2153,7 +2341,14 @@ function renderToday() {
 
   document.getElementById('today-content').innerHTML = html;
   updateHeader();
+  renderProgress();
   initHighlighters();
+
+  // If session just completed, init and render the gate (only once per completion)
+  if (allPass) {
+    if (!gateState) gateState = initGate();
+    renderGate();
+  }
 }
 
 function toggleCollapsible(id) {
