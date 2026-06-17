@@ -359,6 +359,9 @@
       margin-top: 12px;
     }
     .gate-q.gate-q-done { opacity: 0.75; }
+    .gate-actions { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+    .btn-continue { background: var(--accent); color: #000; border: none; border-radius: 8px; padding: 10px 18px; font-size: 14px; font-weight: 700; cursor: pointer; }
+    .btn-skip { background: transparent; border: 1px solid var(--text-dim); color: var(--text-dim); border-radius: 8px; padding: 10px 18px; font-size: 14px; cursor: pointer; }
 
     /* Progress tab */
     .progress-bar-wrap {
@@ -2029,7 +2032,7 @@ function completeSession() {
 // ─── DAY GATE ────────────────────────────────────────────────────────────────
 
 // Ephemeral gate state — not persisted; resets on page reload or new session
-let gateState = null; // null | { questions: [...], current: 0, attempts: [0,0], passed: [false,false], closed: false }
+let gateState = null; // null | { phase: 'prompt'|'questions'|'closed'|'passed', questions: [...], current: 0, attempts: [0,0], passed: [false,false] }
 
 function initGate() {
   const level = progress.level;
@@ -2056,17 +2059,17 @@ function initGate() {
   const gq2 = pool.find(q => q.id !== gq1.id) || pool[1];
 
   return {
+    phase: 'prompt',  // 'prompt' | 'questions' | 'closed' | 'passed'
     concept: nextConcept,
     questions: [gq1, gq2],
     current: 0,       // index of active gate question (0 or 1)
     attempts: [0, 0],
-    passed: [false, false],
-    closed: false     // true when gate failed (exhausted attempts on either Q)
+    passed: [false, false]
   };
 }
 
 function submitGateAnswer(gIdx) {
-  if (!gateState || gateState.closed) return;
+  if (!gateState || gateState.phase !== 'questions') return;
 
   const qdef = gateState.questions[gIdx];
   const ta = document.getElementById(`gate-ta-${gIdx}`);
@@ -2098,6 +2101,7 @@ function submitGateAnswer(gIdx) {
 
     if (gateState.passed[0] && gateState.passed[1]) {
       // Both passed — unlock next session
+      gateState.phase = 'passed';
       progress.gateUnlockedSession = progress.completedSessions;
       const nextSession = generateSession();
       nextSession.gateUnlocked = true;
@@ -2114,7 +2118,7 @@ function submitGateAnswer(gIdx) {
     let msg = ev.hint || 'Not quite right.';
     if (gateState.attempts[gIdx] >= 3) {
       // Gate failed
-      gateState.closed = true;
+      gateState.phase = 'closed';
       renderGate();
       return;
     }
@@ -2122,12 +2126,45 @@ function submitGateAnswer(gIdx) {
   }
 }
 
+function gateSkip() {
+  // User chose "No thanks" — just show the come-back message, no gate
+  const container = document.getElementById('gate-container');
+  if (!container) return;
+  gateState = null;
+  container.innerHTML = `<p style="color:var(--text-dim);font-size:14px;margin-top:8px">Come back tomorrow for your next session.</p>`;
+}
+
+function gateContinue() {
+  // User chose "Continue to next topic?" — advance phase to questions
+  if (!gateState) return;
+  gateState.phase = 'questions';
+  renderGate();
+}
+
 function renderGate() {
   const container = document.getElementById('gate-container');
   if (!container) return;
   if (!gateState) { container.innerHTML = ''; return; }
 
-  if (gateState.closed) {
+  if (gateState.phase === 'prompt') {
+    const conceptLabel = CONCEPT_LABELS[gateState.concept] || gateState.concept;
+    container.innerHTML = `<div class="gate-card">
+      <div class="gate-header">
+        <span class="gate-icon">🔓</span>
+        <div>
+          <h3>Ready for more?</h3>
+          <p style="margin:0;font-size:13px;color:var(--text-dim)">Unlock <strong>${conceptLabel}</strong> right now with 2 quick questions — or come back tomorrow.</p>
+        </div>
+      </div>
+      <div class="gate-actions">
+        <button class="btn-continue" onclick="gateContinue()">Continue to next topic?</button>
+        <button class="btn-skip" onclick="gateSkip()">No thanks, I'll come back tomorrow</button>
+      </div>
+    </div>`;
+    return;
+  }
+
+  if (gateState.phase === 'closed') {
     container.innerHTML = `<div class="gate-card gate-failed">
       <h3>Gate closed</h3>
       <p>Great try! Come back tomorrow to continue.</p>
@@ -2135,6 +2172,7 @@ function renderGate() {
     return;
   }
 
+  // phase === 'questions'
   const conceptLabel = CONCEPT_LABELS[gateState.concept] || gateState.concept;
   let html = `<div class="gate-card">
     <div class="gate-header">
@@ -2308,7 +2346,6 @@ function renderToday() {
     html += `<div class="complete-banner">
       <h2>Session complete! 🎉</h2>
       <div class="streak-display">🔥 ${progress.streak}</div>
-      <p>Come back tomorrow for your next session.</p>
     </div>
     <div id="gate-container"></div>`;
   }
@@ -2344,10 +2381,10 @@ function renderToday() {
   renderProgress();
   initHighlighters();
 
-  // If session just completed, init and render the gate (only once per completion)
+  // If session is complete, show the continue prompt (init gate with phase='prompt' if not already set)
   if (allPass) {
     if (!gateState) gateState = initGate();
-    renderGate();
+    if (gateState) renderGate();
   }
 }
 
