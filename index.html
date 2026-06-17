@@ -1840,13 +1840,6 @@ const QUESTIONS = [
     hint:"DELETE FROM payments WHERE loan_id IN (SELECT loan_id FROM loans WHERE status = 'defaulted') — removes payment_id 7 (loan 4 is defaulted)"}
 ];
 
-// Level 1 warmups for new concepts
-// (aliases + wildcards_adv warmups are q_al1 and q_wl1, already typed='warmup')
-// Level 2–4 warmups for new concepts also already set above
-
-// ─── UNLOCK POOL ─────────────────────────────────────────────────────────────
-
-const UNLOCK_POOL = ['q27','q29','q31','q33','q34','q28','q30','q32','q35'];
 
 // ─── STATE ───────────────────────────────────────────────────────────────────
 
@@ -1887,8 +1880,10 @@ function getTodayString() {
 }
 
 function pickQ(level, concept, type, exclude) {
+  // Prefer unseen; fall back to any matching question when all are exhausted
   return QUESTIONS.find(q => q.level===level && q.concept===concept && q.type===type && !exclude.includes(q.id))
-    || QUESTIONS.find(q => q.level===level && q.concept===concept && q.type===type);
+      || QUESTIONS.find(q => q.level===level && q.concept===concept && q.type===type)
+      || null;
 }
 
 function generateSession() {
@@ -1903,14 +1898,16 @@ function generateSession() {
   const s  = pickQ(level, concept, 'stretch',     [...done, w?.id, c?.id]);
   const ch = pickQ(level, concept, 'challenge',   [...done, w?.id, c?.id, s?.id]);
 
-  // Q4: review — first unseen question from any other concept
-  const otherConcepts = Object.keys(CONCEPT_LABELS).filter(x => x !== concept);
+  // Q4: review — first unseen question from another concept at the same level
+  const otherConcepts = CURRICULUM[level].concepts.filter(x => x !== concept);
+  const usedIds = [w?.id, c?.id, s?.id, ch?.id].filter(Boolean);
   let rev = null;
   for (const oc of otherConcepts) {
-    rev = QUESTIONS.find(q => q.concept === oc && !done.includes(q.id) && q.id !== w?.id && q.id !== c?.id && q.id !== s?.id && q.id !== ch?.id);
+    rev = QUESTIONS.find(q => q.level === level && q.concept === oc && !done.includes(q.id) && !usedIds.includes(q.id));
     if (rev) break;
   }
-  if (!rev) rev = QUESTIONS.find(q => q.concept !== concept);
+  // fallback: any question from the level that differs from the main concept
+  if (!rev) rev = QUESTIONS.find(q => q.level === level && q.concept !== concept);
 
   const slot = (q, status = 'locked') => ({id: q?.id || null, status, attempts: 0});
 
@@ -1958,7 +1955,7 @@ function completeSession() {
     } else if (!progress.lastStreakDate) {
       progress.streak = 1;
     } else {
-      progress.streak = 1; // streak broken
+      progress.streak = 1; // streak broken — start fresh at 1 (session just completed)
     }
     progress.lastStreakDate = today;
   }
@@ -2055,14 +2052,19 @@ function evaluate(question, userSQL) {
 
 // ─── RESULT PREVIEW ──────────────────────────────────────────────────────────
 
+function escCell(v) {
+  if (v === null || v === undefined) return '<em>null</em>';
+  return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
 function buildResultTable(rows) {
   if (!rows || rows.length === 0) return '<p style="color:var(--text-dim);font-size:13px;">No rows returned.</p>';
   const cols = Object.keys(rows[0]);
   const preview = rows.slice(0,5);
   const more = rows.length > 5 ? rows.length - 5 : 0;
-  let html = '<table><thead><tr>' + cols.map(c=>`<th>${c}</th>`).join('') + '</tr></thead><tbody>';
+  let html = '<table><thead><tr>' + cols.map(c=>`<th>${escCell(c)}</th>`).join('') + '</tr></thead><tbody>';
   preview.forEach(row => {
-    html += '<tr>' + cols.map(c=>`<td>${row[c] === null || row[c] === undefined ? '<em>null</em>' : row[c]}</td>`).join('') + '</tr>';
+    html += '<tr>' + cols.map(c=>`<td>${escCell(row[c])}</td>`).join('') + '</tr>';
   });
   html += '</tbody></table>';
   if (more) html += `<div class="more-rows">+${more} more row(s)</div>`;
@@ -2085,82 +2087,6 @@ function showSolution(qKey) {
   fb.className = 'feedback fail show';
   fb.innerHTML = `<div style="color:var(--warning)">Solution revealed — study it, then run it to continue.</div>`;
   document.getElementById(`rp-${qKey}`).className = 'result-preview';
-}
-
-// ─── UNLOCK FUNCTIONS ────────────────────────────────────────────────────────
-
-function updateUnlockHeader() {
-  const el = document.getElementById('unlock-attempts');
-  if (el && progress.currentSession && progress.currentSession.unlock) {
-    const u = progress.currentSession.unlock;
-    el.textContent = `${u.totalAttempts} / 5 attempts used`;
-    if (u.status === 'failed') el.style.color = 'var(--error)';
-  }
-}
-
-function submitUnlock(uIndex) {
-  const session = progress.currentSession;
-  if (!session.unlock || session.unlock.status !== 'pending') return;
-  if (session.unlock.totalAttempts >= 5) return;
-
-  const uSlot = session.unlock.questions[uIndex];
-  if (uSlot.status === 'pass') return; // already passed
-
-  const ta = document.getElementById(`ta-u${uIndex}`);
-  const fb = document.getElementById(`fb-u${uIndex}`);
-  const rp = document.getElementById(`rp-u${uIndex}`);
-  const sql = ta.value.trim();
-  if (!sql) { fb.className='feedback fail show'; fb.innerHTML='Enter a SQL query.'; return; }
-
-  session.unlock.totalAttempts += 1;
-  const qdef = QUESTIONS.find(q=>q.id===uSlot.id);
-  const ev = evaluate(qdef, sql);
-
-  if (ev.pass) {
-    uSlot.status = 'pass';
-    ta.className = 'success';
-    ta.disabled = true;
-    fb.className = 'feedback pass show';
-    fb.innerHTML = `Correct! (${ev.result.length} row(s))`;
-    rp.className = 'result-preview show';
-    rp.innerHTML = buildResultTable(ev.result);
-
-    // check all passed
-    if (session.unlock.questions.every(q=>q.status==='pass')) {
-      session.unlock.status = 'unlocked';
-      saveProgress(progress);
-      // generate next session immediately
-      progress.lastSessionDate = null;
-      progress.currentSession = null;
-      generateSession();
-      setTimeout(()=>renderToday(), 500);
-      return;
-    }
-  } else {
-    ta.className = 'error';
-    fb.className = 'feedback fail show';
-    let msg = ev.hint || 'Not quite right.';
-    fb.innerHTML = `<div>${msg}</div><div class="hint" style="margin-top:6px">Attempts used: ${session.unlock.totalAttempts}/5</div>`;
-    if (!ev.error) {
-      rp.className = 'result-preview show';
-      const yourRows = ev.result || [];
-      rp.innerHTML =
-        `<div style="font-size:11px;color:var(--error);font-weight:700;margin-bottom:4px">YOUR RESULT (${yourRows.length} row${yourRows.length !== 1 ? 's' : ''})</div>` +
-        buildResultTable(yourRows) +
-        `<div style="font-size:11px;color:var(--accent);font-weight:700;margin:10px 0 4px">EXPECTED (${qdef.expected.length} row${qdef.expected.length !== 1 ? 's' : ''})</div>` +
-        buildResultTable(qdef.expected);
-    } else {
-      rp.className = 'result-preview';
-    }
-  }
-
-  // check attempts exhausted
-  if (session.unlock.totalAttempts >= 5 && session.unlock.questions.some(q=>q.status!=='pass')) {
-    session.unlock.status = 'failed';
-  }
-
-  saveProgress(progress);
-  updateUnlockHeader();
 }
 
 // ─── RENDER TODAY TAB ────────────────────────────────────────────────────────
@@ -3319,7 +3245,7 @@ function renderPractice() {
 function buildPracticeHTML() {
   if (!practiceState.concept) {
     let html = '<div class="card"><div class="section-title">Choose a Concept</div>';
-    [1,2,3,4].forEach(lvl => {
+    [1,2,3,4,5].forEach(lvl => {
       html += `<div style="margin-bottom:14px">
         <div style="font-size:12px;font-weight:700;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:8px">Lvl ${lvl} — ${CURRICULUM[lvl].name}</div>
         <div style="display:flex;flex-wrap:wrap;gap:8px">`;
@@ -3480,7 +3406,15 @@ function renderSchema() {
 
 function updateHeader() {
   document.getElementById('hdr-level').textContent = `Lvl ${progress.level} · ${CURRICULUM[progress.level].name}`;
-  document.getElementById('hdr-streak').textContent = `🔥 ${progress.streak}`;
+  // Show 0 if the streak is stale (missed at least one day and today not yet completed)
+  const today = getTodayString();
+  const yesterday = (function(){
+    const d = new Date(); d.setDate(d.getDate()-1);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  })();
+  const streakAlive = progress.lastStreakDate === today || progress.lastStreakDate === yesterday;
+  const displayStreak = streakAlive ? progress.streak : 0;
+  document.getElementById('hdr-streak').textContent = `🔥 ${displayStreak}`;
 }
 
 // ─── TAB SWITCHING ───────────────────────────────────────────────────────────
