@@ -1930,8 +1930,20 @@ function generateSession() {
 
   const w  = pickQ(level, concept, 'warmup',      done);
   const c  = pickQ(level, concept, 'consolidate', [...done, w?.id]);
-  const s  = pickQ(level, concept, 'stretch',     [...done, w?.id, c?.id]);
-  const ch = pickQ(level, concept, 'challenge',   [...done, w?.id, c?.id, s?.id]);
+  // q3: stretch — fallback to consolidate or warmup if no stretch exists for this concept
+  const s  = pickQ(level, concept, 'stretch',     [...done, w?.id, c?.id])
+          || pickQ(level, concept, 'consolidate', [...done, w?.id, c?.id])
+          || pickQ(level, concept, 'warmup',      [...done, w?.id, c?.id]);
+  // q5: challenge — fallback to cross-concept question if no challenge exists for this concept
+  const chExclude = [...done, w?.id, c?.id, s?.id].filter(Boolean);
+  const ch = pickQ(level, concept, 'challenge', chExclude)
+          || QUESTIONS.find(q =>
+               q.level === level &&
+               q.concept !== concept &&
+               !done.includes(q.id) &&
+               !chExclude.includes(q.id)
+             )
+          || QUESTIONS.find(q => q.level === level && q.concept !== concept);
 
   // Q4: review — first unseen question from another concept at the same level
   const otherConcepts = CURRICULUM[level].concepts.filter(x => x !== concept);
