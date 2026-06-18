@@ -12,20 +12,17 @@
 
 ---
 
-## Prerequisites (do before Task 1)
+## Prerequisites — RESOLVED
 
-Two values are needed before touching any code:
+All values confirmed. Use exactly as shown below.
 
-**1. Supabase anon key**
-- Go to `https://supabase.com/dashboard/project/vxbylefdrmcdbngvpjnt/settings/api`
-- Copy the `anon` `public` key (starts with `eyJ...`)
-- You'll paste it into Task 2
-
-**2. Supabase CDN URL + SRI hash**
-- Visit `https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2` in a browser — note the exact resolved version (e.g. `2.49.1`)
-- Go to `https://www.srihash.org/`, enter the full URL: `https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.X.X/dist/umd/supabase.min.js`
-- Copy the `integrity` hash (sha384-...)
-- You'll use both in Task 2
+| Value | Resolved |
+|-------|----------|
+| Supabase project | `fzpohuurshpakcnshafpt` |
+| Supabase URL | `https://fzpohuurshpakcnshafpt.supabase.co` |
+| Supabase anon key | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6cG9odXVzaHBha2Nuc2hhZnB0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3ODg5NzgsImV4cCI6MjA5NzM2NDk3OH0.gLE8NDFrZX-rS0xY_gGtK2PzHampIQ2c-s_nGm_ZtxA` |
+| CDN URL | `https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.min.js` |
+| SRI hash | `sha384-JWEyvHh+lRf0sN/WWY+QTQwX+CyWqmNg4tkc8GQzAMEtR2wGNrCJlvnu1lHD1kDm` |
 
 ---
 
@@ -44,7 +41,7 @@ Two values are needed before touching any code:
 
 - [ ] **Step 1: Open Supabase SQL editor**
 
-Go to `https://supabase.com/dashboard/project/vxbylefdrmcdbngvpjnt/sql/new`
+Go to `https://supabase.com/dashboard/project/fzpohuurshpakcnshafpt/sql/new`
 
 - [ ] **Step 2: Run table creation SQL**
 
@@ -83,8 +80,8 @@ Find:
 
 Replace with (substitute real version and hash from Prerequisites):
 ```html
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.X.X/dist/umd/supabase.min.js"
-        integrity="sha384-REPLACE_WITH_REAL_HASH"
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.min.js"
+        integrity="sha384-JWEyvHh+lRf0sN/WWY+QTQwX+CyWqmNg4tkc8GQzAMEtR2wGNrCJlvnu1lHD1kDm"
         crossorigin="anonymous"></script>
 </head>
 ```
@@ -100,8 +97,8 @@ Replace with:
 ```js
 const STORAGE_KEY = 'sql_trainer_v2';
 const USER_ID_KEY = 'sql_trainer_user_id';
-const SUPABASE_URL = 'https://vxbylefdrmcdbngvpjnt.supabase.co';
-const SUPABASE_ANON_KEY = 'REPLACE_WITH_REAL_ANON_KEY';
+const SUPABASE_URL = 'https://fzpohuurshpakcnshafpt.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6cG9odXVzaHBha2Nuc2hhZnB0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3ODg5NzgsImV4cCI6MjA5NzM2NDk3OH0.gLE8NDFrZX-rS0xY_gGtK2PzHampIQ2c-s_nGm_ZtxA';
 const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 ```
 
@@ -690,7 +687,7 @@ const CACHE = 'sql-trainer-v12';
 const ASSETS = [
   './index.html',
   'https://cdn.jsdelivr.net/npm/alasql@4.2.3/dist/alasql.min.js',
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.X.X/dist/umd/supabase.min.js'
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.min.js'
 ];
 ```
 
