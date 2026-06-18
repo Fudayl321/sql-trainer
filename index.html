@@ -936,6 +936,10 @@
     </div>
 
     <button class="reset-btn" id="reset-btn">Reset all progress</button>
+    <div class="sync-info">
+      <span>Syncing as: <strong id="sync-username">—</strong></span>
+      <button id="change-username-btn">Change</button>
+    </div>
   </div>
 
   <!-- WIKI TAB -->
@@ -4778,6 +4782,20 @@ function renderProgress() {
   const today = getTodayString();
   const streakAlive = progress.lastStreakDate === today;
   if (streakAlive) animate('streak-toast', progress.streak);
+
+  // Sync info
+  const syncUsernameEl = document.getElementById('sync-username');
+  if (syncUsernameEl) syncUsernameEl.textContent = localStorage.getItem(USER_ID_KEY) || '—';
+  const changeBtn = document.getElementById('change-username-btn');
+  if (changeBtn && !changeBtn._wired) {
+    changeBtn._wired = true;
+    changeBtn.addEventListener('click', () => {
+      if (window.confirm('Change username? Your current progress will remain in Supabase under the old username.')) {
+        localStorage.removeItem(USER_ID_KEY);
+        location.reload();
+      }
+    });
+  }
 }
 
 // ─── RENDER SCHEMA TAB ───────────────────────────────────────────────────────
