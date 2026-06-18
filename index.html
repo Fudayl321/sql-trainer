@@ -3020,6 +3020,23 @@ async function loadProgress() {
 
 function saveProgress(p) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
+  _syncToSupabase(p);
+}
+
+async function _syncToSupabase(p) {
+  const userId = localStorage.getItem(USER_ID_KEY);
+  if (!userId) return;
+  showSyncPill('saving');
+  try {
+    const { error } = await _sb
+      .from('sql_trainer_progress')
+      .upsert({ user_id: userId, progress_json: JSON.stringify(p), updated_at: new Date().toISOString() });
+    if (error) throw error;
+    hideSyncPill();
+  } catch(e) {
+    showSyncPill('error');
+    setTimeout(() => hideSyncPill(), 4000);
+  }
 }
 
 let progress = Object.assign({}, DEFAULT_PROGRESS); // set properly by initApp()
