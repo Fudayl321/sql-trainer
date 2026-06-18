@@ -4844,6 +4844,8 @@ document.getElementById('reset-btn').addEventListener('click', () => {
   if (window.confirm('Reset all progress? This cannot be undone.')) {
     localStorage.removeItem(STORAGE_KEY);
     progress = Object.assign({}, DEFAULT_PROGRESS);
+    const userId = localStorage.getItem(USER_ID_KEY);
+    if (userId) _sb.from('sql_trainer_progress').delete().eq('user_id', userId);
     renderToday();
     renderProgress();
     updateHeader();
