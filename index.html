@@ -4846,6 +4846,42 @@ function initHighlighters() {
   });
 }
 
+// ─── USERNAME MODAL ──────────────────────────────────────────────────────────
+
+function showUsernameModal() {
+  const modal = document.getElementById('username-modal');
+  modal.style.display = 'flex';
+  const input = document.getElementById('username-input');
+  const btn = document.getElementById('username-submit');
+  input.addEventListener('input', () => {
+    btn.disabled = input.value.trim().length < 3;
+  });
+  btn.addEventListener('click', () => {
+    const val = input.value.trim();
+    if (val.length < 3) return;
+    localStorage.setItem(USER_ID_KEY, val);
+    modal.style.display = 'none';
+    initApp();
+  });
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !btn.disabled) btn.click();
+  });
+  setTimeout(() => input.focus(), 50);
+}
+
+function showSyncPill(state) {
+  const pill = document.getElementById('sync-pill');
+  if (!pill) return;
+  pill.className = state;
+  pill.textContent = state === 'saving' ? '↑ Saving' : '⚠ Offline';
+}
+
+function hideSyncPill() {
+  const pill = document.getElementById('sync-pill');
+  if (!pill) return;
+  setTimeout(() => { pill.className = ''; pill.textContent = ''; }, 1500);
+}
+
 // ─── INIT ────────────────────────────────────────────────────────────────────
 
 renderToday();
