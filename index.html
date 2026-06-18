@@ -3314,7 +3314,10 @@ function submitAnswer(qKey) {
     if (allDone) completeSession();
 
     saveProgress(progress);
-    setTimeout(() => renderToday(), 400);
+    setTimeout(() => {
+      renderToday();
+      document.getElementById(`fb-${qKey}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 400);
   } else {
     ta.className = 'error';
     fb.className = 'feedback fail show';
@@ -3335,6 +3338,7 @@ function submitAnswer(qKey) {
       rp.className = 'result-preview';
     }
     saveProgress(progress);
+    document.getElementById(`fb-${qKey}`)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }
 }
 
