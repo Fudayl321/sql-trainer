@@ -784,6 +784,109 @@
       z-index: 550;
       animation: slide-in-right 0.35s ease;
     }
+
+    /* ── Username modal ───────────────────────────────────── */
+    #username-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+    .username-box {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px 24px;
+      max-width: 340px;
+      width: 90%;
+      text-align: center;
+    }
+    .username-box h2 {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--accent);
+      margin-bottom: 10px;
+    }
+    .username-box p {
+      font-size: 14px;
+      color: var(--text-dim);
+      margin-bottom: 18px;
+      line-height: 1.5;
+    }
+    #username-input {
+      width: 100%;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-size: 16px;
+      padding: 12px;
+      margin-bottom: 14px;
+      outline: none;
+      text-align: center;
+      box-sizing: border-box;
+    }
+    #username-input:focus { border-color: var(--accent); box-shadow: var(--glow-cyan); }
+    #username-submit {
+      width: 100%;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      padding: 13px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    #username-submit:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    /* ── Sync pill ────────────────────────────────────────── */
+    #sync-pill {
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 20px;
+      padding: 2px 8px;
+      margin-left: 4px;
+      display: none;
+    }
+    #sync-pill.saving {
+      display: inline;
+      color: var(--text-dim);
+      background: var(--surface2);
+      border: 1px solid var(--border);
+    }
+    #sync-pill.error {
+      display: inline;
+      color: var(--warning);
+      background: rgba(245,158,11,0.1);
+      border: 1px solid rgba(245,158,11,0.4);
+    }
+
+    /* ── Sync info in Progress tab ────────────────────────── */
+    .sync-info {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0 4px;
+      border-top: 1px solid var(--border);
+      margin-top: 8px;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+    .sync-info strong { color: var(--text); }
+    #change-username-btn {
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      border-radius: 6px;
+      padding: 4px 10px;
+      font-size: 12px;
+      cursor: pointer;
+    }
   </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.min.js"
         integrity="sha384-JWEyvHh+lRf0sN/WWY+QTQwX+CyWqmNg4tkc8GQzAMEtR2wGNrCJlvnu1lHD1kDm"
@@ -791,11 +894,22 @@
 </head>
 <body>
 
+<!-- Username modal — shown on first visit if no USER_ID_KEY in localStorage -->
+<div id="username-modal" style="display:none">
+  <div class="username-box">
+    <h2>Welcome to SQL Trainer ⚡</h2>
+    <p>Choose a username to save your progress across devices. Pick something unique.</p>
+    <input id="username-input" type="text" placeholder="e.g. dello123" maxlength="30" autocomplete="off" />
+    <button id="username-submit" disabled>Start Training</button>
+  </div>
+</div>
+
 <div id="header">
   <span class="app-name">⚡ SQL Trainer</span>
   <div class="badges">
     <span class="badge level" id="hdr-level">Lvl 1</span>
     <span class="badge streak" id="hdr-streak">🔥 0</span>
+    <span id="sync-pill"></span>
   </div>
 </div>
 
