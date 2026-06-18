@@ -3340,7 +3340,7 @@ function renderToday() {
     const isDone   = slot.status === 'pass';
     const reviewTag = (k === 'q4' && qdef.concept !== concept)
       ? ` · <span style="color:var(--accent2)">${CONCEPT_LABELS[qdef.concept]}</span>` : '';
-    html += `<div class="q-card${isLocked?' locked':''}">
+    html += `<div class="q-card${isLocked?' locked':''}" id="qcard-${k}">
       <div class="q-header">
         <span class="q-label">${Q_LABELS[k]}${reviewTag}</span>
         ${isDone ? '<span class="pill pass">✓ Pass</span>' : isLocked ? `<span class="pill locked">🔒 Complete Q${idx} first</span>` : ''}
@@ -3420,6 +3420,7 @@ function submitAnswer(qKey) {
     fb.innerHTML = `Correct! Your query returned ${ev.result.length} row(s).`;
     rp.className = 'result-preview show';
     rp.innerHTML = buildResultTable(ev.result);
+    animate('correct-pulse', document.getElementById(`qcard-${qKey}`));
 
     const nextKey = NEXT_Q[qKey];
     if (nextKey && session[nextKey]) session[nextKey].status = 'pending';
@@ -3435,6 +3436,7 @@ function submitAnswer(qKey) {
   } else {
     ta.className = 'error';
     fb.className = 'feedback fail show';
+    animate('shake', document.getElementById(`qcard-${qKey}`));
     let msg = ev.hint || 'Not quite right.';
     const solutionBtn = qSlot.attempts >= 3
       ? `<button onclick="showSolution('${qKey}')" style="display:block;margin-top:10px;background:none;border:1px solid var(--warning);color:var(--warning);border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:600">Show Solution</button>`
