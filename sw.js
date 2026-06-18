@@ -1,7 +1,8 @@
-const CACHE = 'sql-trainer-v11';
+const CACHE = 'sql-trainer-v12';
 const ASSETS = [
   './index.html',
-  'https://cdn.jsdelivr.net/npm/alasql@4.2.3/dist/alasql.min.js'
+  'https://cdn.jsdelivr.net/npm/alasql@4.2.3/dist/alasql.min.js',
+  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.min.js'
 ];
 
 self.addEventListener('install', e => {
