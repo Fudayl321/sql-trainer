@@ -2987,11 +2987,34 @@ const DEFAULT_PROGRESS = {
   gateUnlockedSession: -1
 };
 
-function loadProgress() {
+async function loadProgress() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return Object.assign({}, DEFAULT_PROGRESS, JSON.parse(raw));
+    if (raw) {
+      const p = Object.assign({}, DEFAULT_PROGRESS, JSON.parse(raw));
+      if (p.completedSessions > 0 || p.level > 1 || p.completedQuestions.length > 0) {
+        return p;
+      }
+    }
   } catch(e) {}
+
+  // Fallback: fetch from Supabase when localStorage has no real progress
+  const userId = localStorage.getItem(USER_ID_KEY);
+  if (userId) {
+    try {
+      const { data } = await _sb
+        .from('sql_trainer_progress')
+        .select('progress_json')
+        .eq('user_id', userId)
+        .single();
+      if (data?.progress_json) {
+        const p = Object.assign({}, DEFAULT_PROGRESS, JSON.parse(data.progress_json));
+        localStorage.setItem(STORAGE_KEY, data.progress_json);
+        return p;
+      }
+    } catch(e) {}
+  }
+
   return Object.assign({}, DEFAULT_PROGRESS);
 }
 
@@ -2999,7 +3022,7 @@ function saveProgress(p) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
 }
 
-let progress = loadProgress();
+let progress = Object.assign({}, DEFAULT_PROGRESS); // set properly by initApp()
 
 // ─── SESSION LOGIC ───────────────────────────────────────────────────────────
 
