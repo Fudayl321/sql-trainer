@@ -2997,8 +2997,9 @@ function completeSession() {
 
   progress.completedSessions += 1;
 
-  // check level up: concepts.length * 2 sessions = one full pass through all concepts with both question types
+  // check level up
   const currentLevel = progress.level;
+  let didLevelUp = false;
   if (currentLevel < 5) {
     const concepts = CURRICULUM[currentLevel].concepts;
     const sessionsNeeded = concepts.length;
@@ -3010,11 +3011,18 @@ function completeSession() {
         );
       if (sessionsForLevel) {
         progress.level = Math.min(5, currentLevel + 1);
+        didLevelUp = true;
       }
     }
   }
 
   saveProgress(progress);
+
+  // Fire animations after save
+  setTimeout(() => {
+    animate('session-complete');
+    if (didLevelUp) setTimeout(() => animate('level-up', progress.level), 1300);
+  }, 50);
 }
 
 // ─── DAY GATE ────────────────────────────────────────────────────────────────
