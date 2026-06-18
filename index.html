@@ -4724,6 +4724,67 @@ if ('serviceWorker' in navigator) {
   });
 }
 
+// ─── ANIMATION LAYER ─────────────────────────────────────────────────────────
+
+const _shownToasts = new Set(JSON.parse(localStorage.getItem('shown-toasts') || '[]'));
+
+function animate(type, arg) {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  if (type === 'correct-pulse' && arg) {
+    arg.style.animation = 'none';
+    arg.offsetHeight; // reflow
+    arg.style.animation = 'correct-pulse 0.6s ease forwards';
+    setTimeout(() => { if (arg) arg.style.animation = ''; }, 650);
+  }
+
+  if (type === 'shake' && arg) {
+    arg.style.animation = 'none';
+    arg.offsetHeight;
+    arg.style.animation = 'shake 0.3s ease';
+    setTimeout(() => { if (arg) arg.style.animation = ''; }, 350);
+  }
+
+  if (type === 'session-complete') {
+    const overlay = document.createElement('div');
+    overlay.id = 'session-overlay';
+    overlay.innerHTML = `<div class="overlay-content">
+      <div class="overlay-title">Session Complete!</div>
+      <div class="overlay-sub">Concept complete · Keep the streak going 🔥</div>
+    </div>`;
+    document.body.appendChild(overlay);
+    setTimeout(() => overlay.remove(), 1250);
+  }
+
+  if (type === 'level-up' && arg) {
+    const newLevel = arg;
+    const levelNames = { 1:'Foundations', 2:'Aggregation', 3:'Joins & Subqueries', 4:'CTEs & Windows', 5:'DML & Data Changes' };
+    const colors = { 1:'#00d4ff', 2:'#7c3aed', 3:'#22c55e', 4:'#f59e0b', 5:'#ef4444' };
+    const modal = document.createElement('div');
+    modal.id = 'levelup-modal';
+    modal.innerHTML = `<div class="modal-box" style="border: 2px solid ${colors[newLevel]}; box-shadow: 0 0 24px ${colors[newLevel]}44;">
+      <div class="modal-title" style="color:${colors[newLevel]}">Level Up! 🎉</div>
+      <div class="modal-level">Level ${newLevel} · ${levelNames[newLevel] || ''}</div>
+      <button class="modal-close" onclick="document.getElementById('levelup-modal').remove()">Let's Go!</button>
+    </div>`;
+    document.body.appendChild(modal);
+  }
+
+  if (type === 'streak-toast' && arg) {
+    const streak = arg;
+    const milestones = [3, 7, 14];
+    const key = `streak-${streak}`;
+    if (!milestones.includes(streak) || _shownToasts.has(key)) return;
+    _shownToasts.add(key);
+    localStorage.setItem('shown-toasts', JSON.stringify([..._shownToasts]));
+    const toast = document.createElement('div');
+    toast.id = 'streak-toast';
+    toast.textContent = `🔥 ${streak}-day streak!`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3000);
+  }
+}
+
 // ─── PWA INSTALL BANNER ──────────────────────────────────────────────────────
 
 let _installPrompt = null;
