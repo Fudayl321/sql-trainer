@@ -623,6 +623,53 @@
       font-size: 14px;
     }
     .stat-val { font-weight: 700; color: var(--text); }
+
+    /* PWA install banner */
+    #pwa-banner {
+      background: var(--surface2);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--text);
+      position: relative;
+      z-index: 99;
+    }
+    #pwa-banner button {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    #pwa-banner .pwa-dismiss {
+      background: none;
+      color: var(--text-dim);
+      border: none;
+      font-size: 18px;
+      cursor: pointer;
+      padding: 0 4px;
+      line-height: 1;
+    }
+
+    /* Offline indicator */
+    #offline-pill {
+      background: rgba(245,158,11,0.15);
+      border: 1px solid rgba(245,158,11,0.4);
+      color: var(--warning);
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-left: 8px;
+    }
   </style>
 </head>
 <body>
@@ -4558,6 +4605,63 @@ if ('serviceWorker' in navigator) {
     });
   });
 }
+
+// ─── PWA INSTALL BANNER ──────────────────────────────────────────────────────
+
+let _installPrompt = null;
+
+window.addEventListener('beforeinstallprompt', e => {
+  e.preventDefault();
+  _installPrompt = e;
+  if (!localStorage.getItem('pwa-dismissed')) showInstallBanner();
+});
+
+function showInstallBanner() {
+  if (document.getElementById('pwa-banner')) return;
+  const banner = document.createElement('div');
+  banner.id = 'pwa-banner';
+  banner.innerHTML = `
+    <span>📱 Install SQL Trainer as an app</span>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button onclick="triggerInstall()">Install</button>
+      <button class="pwa-dismiss" onclick="dismissInstallBanner()" aria-label="Dismiss">×</button>
+    </div>`;
+  const main = document.getElementById('main');
+  main.insertBefore(banner, main.firstChild);
+}
+
+function triggerInstall() {
+  if (!_installPrompt) return;
+  _installPrompt.prompt();
+  _installPrompt.userChoice.then(() => { _installPrompt = null; });
+  dismissInstallBanner();
+}
+
+function dismissInstallBanner() {
+  localStorage.setItem('pwa-dismissed', '1');
+  const b = document.getElementById('pwa-banner');
+  if (b) b.remove();
+}
+
+// ─── OFFLINE INDICATOR ───────────────────────────────────────────────────────
+
+function updateOnlineStatus() {
+  const existing = document.getElementById('offline-pill');
+  if (!navigator.onLine) {
+    if (!existing) {
+      const pill = document.createElement('span');
+      pill.id = 'offline-pill';
+      pill.textContent = 'Offline';
+      document.querySelector('#header .badges').appendChild(pill);
+    }
+  } else {
+    if (existing) existing.remove();
+  }
+}
+
+window.addEventListener('online',  updateOnlineStatus);
+window.addEventListener('offline', updateOnlineStatus);
+updateOnlineStatus();
 </script>
 </body>
 </html>
