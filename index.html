@@ -4612,6 +4612,11 @@ function renderProgress() {
     });
   });
   document.getElementById('concept-list').innerHTML = html;
+
+  // Streak milestone toast
+  const today = getTodayString();
+  const streakAlive = progress.lastStreakDate === today;
+  if (streakAlive) animate('streak-toast', progress.streak);
 }
 
 // ─── RENDER SCHEMA TAB ───────────────────────────────────────────────────────
