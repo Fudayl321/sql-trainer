@@ -785,6 +785,9 @@
       animation: slide-in-right 0.35s ease;
     }
   </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.min.js"
+        integrity="sha384-JWEyvHh+lRf0sN/WWY+QTQwX+CyWqmNg4tkc8GQzAMEtR2wGNrCJlvnu1lHD1kDm"
+        crossorigin="anonymous"></script>
 </head>
 <body>
 
@@ -2854,6 +2857,10 @@ const QUESTIONS = [
 // ─── STATE ───────────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = 'sql_trainer_v2';
+const USER_ID_KEY = 'sql_trainer_user_id';
+const SUPABASE_URL = 'https://fzpohuurshpakcnshafpt.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6cG9odXVzaHBha2Nuc2hhZnB0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3ODg5NzgsImV4cCI6MjA5NzM2NDk3OH0.gLE8NDFrZX-rS0xY_gGtK2PzHampIQ2c-s_nGm_ZtxA';
+const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const DEFAULT_PROGRESS = {
   level: 1,
