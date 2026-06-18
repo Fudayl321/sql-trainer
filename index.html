@@ -2127,7 +2127,532 @@ const QUESTIONS = [
       });
       return result;
     })(),
-    hint:'Use both LAG and LEAD with PARTITION BY loan_id ORDER BY payment_id — each resets per loan. Both return NULL at the boundaries.'}
+    hint:'Use both LAG and LEAD with PARTITION BY loan_id ORDER BY payment_id — each resets per loan. Both return NULL at the boundaries.'},
+
+  // ── Gate questions (type:'gate') — used only by initGate(), never appear in sessions ──
+  // L1
+  {id:'q_sb_g1',level:1,concept:'select_basics',type:'gate',ordered:false,
+    prompt:'List all columns from the <strong>customers</strong> table.',
+    solution:'SELECT * FROM customers',
+    expected:TABLES.customers,
+    hint:'SELECT * FROM customers — use * to return every column.'},
+  {id:'q_sb_g2',level:1,concept:'select_basics',type:'gate',ordered:false,
+    prompt:'Show only <em>name</em> and <em>city</em> from customers.',
+    solution:'SELECT name, city FROM customers',
+    expected:TABLES.customers.map(r=>({name:r.name,city:r.city})),
+    hint:'SELECT name, city FROM customers — list exactly the two column names.'},
+
+  {id:'q_wf_g1',level:1,concept:'where_filter',type:'gate',ordered:false,
+    prompt:'Find all <strong>closed</strong> loans. Return all columns.',
+    solution:"SELECT * FROM loans WHERE status = 'closed'",
+    expected:TABLES.loans.filter(r=>r.status==='closed'),
+    hint:"WHERE status = 'closed' — single quotes around the string value."},
+  {id:'q_wf_g2',level:1,concept:'where_filter',type:'gate',ordered:false,
+    prompt:'Find all employees with a salary above 70000. Return all columns.',
+    solution:'SELECT * FROM employees WHERE salary > 70000',
+    expected:TABLES.employees.filter(r=>r.salary>70000),
+    hint:'WHERE salary > 70000 — strictly greater than, not >=.'},
+
+  {id:'q_wo_g1',level:1,concept:'where_operators',type:'gate',ordered:false,
+    prompt:'Find active loans with an interest_rate below 6. Return all columns.',
+    solution:"SELECT * FROM loans WHERE status = 'active' AND interest_rate < 6",
+    expected:TABLES.loans.filter(r=>r.status==='active'&&r.interest_rate<6),
+    hint:"Both conditions must be true: status = 'active' AND interest_rate < 6."},
+  {id:'q_wo_g2',level:1,concept:'where_operators',type:'gate',ordered:false,
+    prompt:'Find customers from Bangkok or Tokyo. Return all columns.',
+    solution:"SELECT * FROM customers WHERE city = 'Bangkok' OR city = 'Tokyo'",
+    expected:TABLES.customers.filter(r=>r.city==='Bangkok'||r.city==='Tokyo'),
+    hint:"Use OR — city = 'Bangkok' OR city = 'Tokyo'."},
+
+  {id:'q_ob_g1',level:1,concept:'order_by',type:'gate',ordered:true,
+    prompt:'List all loans sorted by amount descending.',
+    solution:'SELECT * FROM loans ORDER BY amount DESC',
+    expected:[...TABLES.loans].sort((a,b)=>b.amount-a.amount),
+    hint:'ORDER BY amount DESC at the end of the query.'},
+  {id:'q_ob_g2',level:1,concept:'order_by',type:'gate',ordered:true,
+    prompt:'List all customers sorted by name ascending.',
+    solution:'SELECT * FROM customers ORDER BY name ASC',
+    expected:[...TABLES.customers].sort((a,b)=>a.name.localeCompare(b.name)),
+    hint:'ORDER BY name ASC.'},
+
+  {id:'q_di_g1',level:1,concept:'distinct',type:'gate',ordered:false,
+    prompt:'List each unique department from employees.',
+    solution:'SELECT DISTINCT department FROM employees',
+    expected:[{department:'Credit'},{department:'Operations'},{department:'Risk'},{department:'IT'}],
+    hint:'SELECT DISTINCT department FROM employees.'},
+  {id:'q_di_g2',level:1,concept:'distinct',type:'gate',ordered:false,
+    prompt:'List each unique segment from customers.',
+    solution:'SELECT DISTINCT segment FROM customers',
+    expected:[{segment:'retail'},{segment:'sme'},{segment:'corporate'}],
+    hint:'SELECT DISTINCT segment FROM customers.'},
+
+  {id:'q_li_g1',level:1,concept:'limit',type:'gate',ordered:true,
+    prompt:'Show the top 3 loans by amount (largest first).',
+    solution:'SELECT * FROM loans ORDER BY amount DESC LIMIT 3',
+    expected:[...TABLES.loans].sort((a,b)=>b.amount-a.amount).slice(0,3),
+    hint:'ORDER BY amount DESC then LIMIT 3.'},
+  {id:'q_li_g2',level:1,concept:'limit',type:'gate',ordered:true,
+    prompt:'Show the 2 employees with the lowest salary.',
+    solution:'SELECT * FROM employees ORDER BY salary ASC LIMIT 2',
+    expected:[...TABLES.employees].sort((a,b)=>a.salary-b.salary).slice(0,2),
+    hint:'ORDER BY salary ASC to sort lowest first, then LIMIT 2.'},
+
+  {id:'q_bt_g1',level:1,concept:'between',type:'gate',ordered:false,
+    prompt:'Find employees hired between 2019 and 2021 (inclusive). Return all columns.',
+    solution:'SELECT * FROM employees WHERE hire_year BETWEEN 2019 AND 2021',
+    expected:TABLES.employees.filter(r=>r.hire_year>=2019&&r.hire_year<=2021),
+    hint:'BETWEEN includes both endpoints.'},
+  {id:'q_bt_g2',level:1,concept:'between',type:'gate',ordered:false,
+    prompt:'Find transactions with amount between 200 and 500 (inclusive). Return all columns.',
+    solution:'SELECT * FROM transactions WHERE amount BETWEEN 200 AND 500',
+    expected:TABLES.transactions.filter(r=>r.amount>=200&&r.amount<=500),
+    hint:'WHERE amount BETWEEN 200 AND 500.'},
+
+  {id:'q_lk_g1',level:1,concept:'like',type:'gate',ordered:false,
+    prompt:"Find employees whose name starts with 'S'. Return all columns.",
+    solution:"SELECT * FROM employees WHERE name LIKE 'S%'",
+    expected:TABLES.employees.filter(r=>r.name.startsWith('S')),
+    hint:"LIKE 'S%' — % matches any characters after S."},
+  {id:'q_lk_g2',level:1,concept:'like',type:'gate',ordered:false,
+    prompt:"Find customers whose city ends with 'ur'. Return all columns.",
+    solution:"SELECT * FROM customers WHERE city LIKE '%ur'",
+    expected:TABLES.customers.filter(r=>r.city.endsWith('ur')),
+    hint:"LIKE '%ur' — % matches anything before 'ur'."},
+
+  {id:'q_nu_g1',level:1,concept:'is_null',type:'gate',ordered:false,
+    prompt:'Find employees who have no manager assigned. Return all columns.',
+    solution:'SELECT * FROM employees WHERE manager_id IS NULL',
+    expected:TABLES.employees.filter(r=>r.manager_id===null),
+    hint:'Use IS NULL, not = NULL.'},
+  {id:'q_nu_g2',level:1,concept:'is_null',type:'gate',ordered:false,
+    prompt:'Find employees who DO have a manager assigned. Return all columns.',
+    solution:'SELECT * FROM employees WHERE manager_id IS NOT NULL',
+    expected:TABLES.employees.filter(r=>r.manager_id!==null),
+    hint:'IS NOT NULL finds rows where the column has a value.'},
+
+  {id:'q_al_g1',level:1,concept:'aliases',type:'gate',ordered:false,
+    prompt:'Show loan_id renamed as <em>id</em> and amount renamed as <em>value</em> from loans.',
+    solution:'SELECT loan_id AS id, amount AS value FROM loans',
+    expected:TABLES.loans.map(r=>({id:r.loan_id,value:r.amount})),
+    hint:'SELECT loan_id AS id, amount AS value FROM loans.'},
+  {id:'q_al_g2',level:1,concept:'aliases',type:'gate',ordered:false,
+    prompt:'Show customer name as <em>customer</em> and city as <em>location</em> from customers.',
+    solution:'SELECT name AS customer, city AS location FROM customers',
+    expected:TABLES.customers.map(r=>({customer:r.name,location:r.city})),
+    hint:'SELECT name AS customer, city AS location FROM customers.'},
+
+  {id:'q_wl_g1',level:1,concept:'wildcards_adv',type:'gate',ordered:false,
+    prompt:"Find employees whose name matches the pattern <code>_iti%</code> (any char, then 'iti', then anything).",
+    solution:"SELECT * FROM employees WHERE name LIKE '_iti%'",
+    expected:TABLES.employees.filter(r=>/^.iti/.test(r.name)),
+    hint:"_ matches exactly one character. '_iti%' matches names like 'Siti Noor'."},
+  {id:'q_wl_g2',level:1,concept:'wildcards_adv',type:'gate',ordered:false,
+    prompt:"Find products whose name starts with any single letter followed by 'ome' (e.g. 'Home Loan').",
+    solution:"SELECT * FROM products WHERE name LIKE '_ome%'",
+    expected:TABLES.products.filter(r=>/^.ome/.test(r.name)),
+    hint:"'_ome%' — underscore matches exactly one character, then 'ome', then anything."},
+
+  // L2
+  {id:'q_ag_g1',level:2,concept:'aggregate_functions',type:'gate',ordered:false,
+    prompt:'Count the total number of customers as <em>customer_count</em>.',
+    solution:'SELECT COUNT(*) AS customer_count FROM customers',
+    expected:[{customer_count:8}],
+    hint:'SELECT COUNT(*) AS customer_count FROM customers.'},
+  {id:'q_ag_g2',level:2,concept:'aggregate_functions',type:'gate',ordered:false,
+    prompt:'Find the maximum loan amount as <em>max_amount</em> and minimum as <em>min_amount</em>.',
+    solution:'SELECT MAX(amount) AS max_amount, MIN(amount) AS min_amount FROM loans',
+    expected:[{max_amount:22000,min_amount:3200}],
+    hint:'SELECT MAX(amount) AS max_amount, MIN(amount) AS min_amount FROM loans.'},
+
+  {id:'q_gb_g1',level:2,concept:'group_by',type:'gate',ordered:false,
+    prompt:'Count transactions per <em>category</em>. Return category and <em>txn_count</em>.',
+    solution:'SELECT category, COUNT(*) AS txn_count FROM transactions GROUP BY category',
+    expected:(function(){
+      const m={};
+      TABLES.transactions.forEach(t=>m[t.category]=(m[t.category]||0)+1);
+      return Object.entries(m).map(([category,txn_count])=>({category,txn_count}));
+    })(),
+    hint:'GROUP BY category, then COUNT(*) AS txn_count.'},
+  {id:'q_gb_g2',level:2,concept:'group_by',type:'gate',ordered:false,
+    prompt:'Show the number of employees per <em>branch_id</em>. Return branch_id and <em>emp_count</em>.',
+    solution:'SELECT branch_id, COUNT(*) AS emp_count FROM employees GROUP BY branch_id',
+    expected:(function(){
+      const m={};
+      TABLES.employees.forEach(e=>m[e.branch_id]=(m[e.branch_id]||0)+1);
+      return Object.entries(m).map(([b,c])=>({branch_id:Number(b),emp_count:c}));
+    })(),
+    hint:'GROUP BY branch_id, then COUNT(*) AS emp_count.'},
+
+  {id:'q_hv_g1',level:2,concept:'having',type:'gate',ordered:false,
+    prompt:'Find departments with more than 2 employees. Return department and <em>emp_count</em>.',
+    solution:'SELECT department, COUNT(*) AS emp_count FROM employees GROUP BY department HAVING COUNT(*) > 2',
+    expected:(function(){
+      const m={};
+      TABLES.employees.forEach(e=>m[e.department]=(m[e.department]||0)+1);
+      return Object.entries(m).filter(([,c])=>c>2).map(([department,emp_count])=>({department,emp_count}));
+    })(),
+    hint:'HAVING COUNT(*) > 2 filters after grouping — WHERE runs before GROUP BY and cannot see COUNT.'},
+  {id:'q_hv_g2',level:2,concept:'having',type:'gate',ordered:false,
+    prompt:'Find customer_ids whose total loan amount exceeds 15000. Return customer_id and <em>total</em>.',
+    solution:'SELECT customer_id, SUM(amount) AS total FROM loans GROUP BY customer_id HAVING SUM(amount) > 15000',
+    expected:(function(){
+      const m={};
+      TABLES.loans.forEach(l=>m[l.customer_id]=(m[l.customer_id]||0)+l.amount);
+      return Object.entries(m).filter(([,t])=>t>15000).map(([id,total])=>({customer_id:Number(id),total}));
+    })(),
+    hint:'HAVING SUM(amount) > 15000 — filter on the aggregate after grouping.'},
+
+  {id:'q_cw_g1',level:2,concept:'case_when',type:'gate',ordered:false,
+    prompt:"Label each loan: <strong>'big'</strong> if amount >= 10000, else <strong>'small'</strong>. Return loan_id and <em>size</em>.",
+    solution:"SELECT loan_id, CASE WHEN amount >= 10000 THEN 'big' ELSE 'small' END AS size FROM loans",
+    expected:TABLES.loans.map(r=>({loan_id:r.loan_id,size:r.amount>=10000?'big':'small'})),
+    hint:"CASE WHEN amount >= 10000 THEN 'big' ELSE 'small' END AS size."},
+  {id:'q_cw_g2',level:2,concept:'case_when',type:'gate',ordered:false,
+    prompt:"Show each employee's name and a <em>role</em>: 'manager' if manager_id IS NULL, else 'staff'.",
+    solution:"SELECT name, CASE WHEN manager_id IS NULL THEN 'manager' ELSE 'staff' END AS role FROM employees",
+    expected:TABLES.employees.map(r=>({name:r.name,role:r.manager_id===null?'manager':'staff'})),
+    hint:"CASE WHEN manager_id IS NULL THEN 'manager' ELSE 'staff' END AS role."},
+
+  {id:'q_un_g1',level:2,concept:'union',type:'gate',ordered:false,
+    prompt:'Combine all unique statuses from loans and payments into one list. Return a single column named <em>status</em>.',
+    solution:'SELECT status FROM loans UNION SELECT status FROM payments',
+    expected:(function(){
+      const s=new Set([...TABLES.loans.map(r=>r.status),...TABLES.payments.map(r=>r.status)]);
+      return [...s].map(status=>({status}));
+    })(),
+    hint:'UNION removes duplicates. Both SELECTs must return the same column count.'},
+  {id:'q_un_g2',level:2,concept:'union',type:'gate',ordered:false,
+    prompt:'List all employee names UNION ALL all customer names. Return a single column named <em>name</em>.',
+    solution:'SELECT name FROM employees UNION ALL SELECT name FROM customers',
+    expected:[...TABLES.employees.map(r=>({name:r.name})),...TABLES.customers.map(r=>({name:r.name}))],
+    hint:'UNION ALL keeps all rows including duplicates — 10 + 8 = 18 rows.'},
+
+  {id:'q_sf_g1',level:2,concept:'string_functions',type:'gate',ordered:false,
+    prompt:'Show each branch name in UPPERCASE as <em>branch_name</em>.',
+    solution:'SELECT UPPER(name) AS branch_name FROM branches',
+    expected:TABLES.branches.map(r=>({branch_name:r.name.toUpperCase()})),
+    hint:'UPPER(name) converts to uppercase.'},
+  {id:'q_sf_g2',level:2,concept:'string_functions',type:'gate',ordered:false,
+    prompt:'Show each product name and the length of its name as <em>name_len</em>.',
+    solution:'SELECT name, LENGTH(name) AS name_len FROM products',
+    expected:TABLES.products.map(r=>({name:r.name,name_len:r.name.length})),
+    hint:'LENGTH(name) returns the character count.'},
+
+  {id:'q_df_g1',level:2,concept:'date_functions',type:'gate',ordered:true,
+    prompt:'Count how many loans started in each <em>start_year</em>. Return start_year and <em>loan_count</em>, ordered by start_year.',
+    solution:'SELECT start_year, COUNT(*) AS loan_count FROM loans GROUP BY start_year ORDER BY start_year',
+    expected:(function(){
+      const m={};
+      TABLES.loans.forEach(l=>m[l.start_year]=(m[l.start_year]||0)+1);
+      return Object.entries(m).sort((a,b)=>Number(a[0])-Number(b[0])).map(([sy,lc])=>({start_year:Number(sy),loan_count:lc}));
+    })(),
+    hint:'GROUP BY start_year, COUNT(*) AS loan_count, ORDER BY start_year.'},
+  {id:'q_df_g2',level:2,concept:'date_functions',type:'gate',ordered:false,
+    prompt:'Find the earliest and latest loan start year. Return <em>min_year</em> and <em>max_year</em>.',
+    solution:'SELECT MIN(start_year) AS min_year, MAX(start_year) AS max_year FROM loans',
+    expected:[{min_year:2021,max_year:2024}],
+    hint:'SELECT MIN(start_year) AS min_year, MAX(start_year) AS max_year FROM loans.'},
+
+  // L3
+  {id:'q_ij_g1',level:3,concept:'inner_join',type:'gate',ordered:false,
+    prompt:'Show each employee name and their branch name as <em>branch_name</em>. Join employees to branches.',
+    solution:'SELECT e.name, b.name AS branch_name FROM employees e JOIN branches b ON e.branch_id = b.branch_id',
+    expected:TABLES.employees.map(e=>{const b=TABLES.branches.find(b=>b.branch_id===e.branch_id);return {name:e.name,branch_name:b.name};}),
+    hint:'JOIN branches b ON e.branch_id = b.branch_id — match the foreign key.'},
+  {id:'q_ij_g2',level:3,concept:'inner_join',type:'gate',ordered:false,
+    prompt:'Show loan_id and the borrower name as <em>name</em>. Join loans to customers.',
+    solution:'SELECT l.loan_id, c.name FROM loans l JOIN customers c ON l.customer_id = c.customer_id',
+    expected:TABLES.loans.map(l=>{const c=TABLES.customers.find(c=>c.customer_id===l.customer_id);return {loan_id:l.loan_id,name:c.name};}),
+    hint:'JOIN customers c ON l.customer_id = c.customer_id.'},
+
+  {id:'q_lj_g1',level:3,concept:'left_join',type:'gate',ordered:false,
+    prompt:'List all branches and their employee count as <em>emp_count</em> (0 for branches with no employees). Use LEFT JOIN.',
+    solution:'SELECT b.name, COUNT(e.employee_id) AS emp_count FROM branches b LEFT JOIN employees e ON b.branch_id = e.branch_id GROUP BY b.name',
+    expected:(function(){
+      const m={};
+      TABLES.employees.forEach(e=>{const b=TABLES.branches.find(b=>b.branch_id===e.branch_id);if(b)m[b.name]=(m[b.name]||0)+1;});
+      return TABLES.branches.map(b=>({name:b.name,emp_count:m[b.name]||0}));
+    })(),
+    hint:'LEFT JOIN keeps all branches. COUNT(e.employee_id) returns 0 where there is no match.'},
+  {id:'q_lj_g2',level:3,concept:'left_join',type:'gate',ordered:false,
+    prompt:"For each customer, show name and their most recent loan start_year as <em>last_loan_year</em> (NULL if no loans). Use LEFT JOIN.",
+    solution:'SELECT c.name, MAX(l.start_year) AS last_loan_year FROM customers c LEFT JOIN loans l ON c.customer_id = l.customer_id GROUP BY c.name',
+    expected:(function(){
+      return TABLES.customers.map(c=>{
+        const ls=TABLES.loans.filter(l=>l.customer_id===c.customer_id);
+        return {name:c.name,last_loan_year:ls.length?Math.max(...ls.map(l=>l.start_year)):null};
+      });
+    })(),
+    hint:'MAX(l.start_year) returns NULL when the LEFT JOIN finds no match.'},
+
+  {id:'q_sq_g1',level:3,concept:'subquery',type:'gate',ordered:false,
+    prompt:'Find all customers with a credit_score above the average credit_score. Return all columns.',
+    solution:'SELECT * FROM customers WHERE credit_score > (SELECT AVG(credit_score) FROM customers)',
+    expected:(function(){
+      const avg=TABLES.customers.reduce((s,c)=>s+c.credit_score,0)/TABLES.customers.length;
+      return TABLES.customers.filter(c=>c.credit_score>avg);
+    })(),
+    hint:'The subquery (SELECT AVG(credit_score) FROM customers) computes the threshold.'},
+  {id:'q_sq_g2',level:3,concept:'subquery',type:'gate',ordered:false,
+    prompt:'Find all employees earning more than the average salary. Return all columns.',
+    solution:'SELECT * FROM employees WHERE salary > (SELECT AVG(salary) FROM employees)',
+    expected:(function(){
+      const avg=TABLES.employees.reduce((s,e)=>s+e.salary,0)/TABLES.employees.length;
+      return TABLES.employees.filter(e=>e.salary>avg);
+    })(),
+    hint:'WHERE salary > (SELECT AVG(salary) FROM employees).'},
+
+  {id:'q_ie_g1',level:3,concept:'in_exists',type:'gate',ordered:false,
+    prompt:'Find all customers who have at least one loan. Use IN. Return all columns.',
+    solution:'SELECT * FROM customers WHERE customer_id IN (SELECT customer_id FROM loans)',
+    expected:TABLES.customers.filter(c=>TABLES.loans.some(l=>l.customer_id===c.customer_id)),
+    hint:'IN (SELECT customer_id FROM loans) — subquery returns the list to check against.'},
+  {id:'q_ie_g2',level:3,concept:'in_exists',type:'gate',ordered:false,
+    prompt:'Find all loans that have at least one payment recorded. Use IN. Return all columns.',
+    solution:'SELECT * FROM loans WHERE loan_id IN (SELECT loan_id FROM payments)',
+    expected:TABLES.loans.filter(l=>TABLES.payments.some(p=>p.loan_id===l.loan_id)),
+    hint:'IN (SELECT loan_id FROM payments) — matches loans that appear in the payments table.'},
+
+  {id:'q_sj_g1',level:3,concept:'self_join',type:'gate',ordered:false,
+    prompt:'Show each employee name as <em>emp</em> and their manager name as <em>mgr</em>. Exclude employees with no manager.',
+    solution:'SELECT e.name AS emp, m.name AS mgr FROM employees e JOIN employees m ON e.manager_id = m.employee_id',
+    expected:(function(){
+      return TABLES.employees.filter(e=>e.manager_id!==null).map(e=>{
+        const m=TABLES.employees.find(m=>m.employee_id===e.manager_id);
+        return {emp:e.name,mgr:m.name};
+      });
+    })(),
+    hint:'Alias the same table twice: e for the employee, m for the manager. JOIN on manager_id = employee_id.'},
+  {id:'q_sj_g2',level:3,concept:'self_join',type:'gate',ordered:false,
+    prompt:"Show each employee's name and their manager's department as <em>mgr_dept</em>. Exclude employees with no manager.",
+    solution:'SELECT e.name, m.department AS mgr_dept FROM employees e JOIN employees m ON e.manager_id = m.employee_id',
+    expected:(function(){
+      return TABLES.employees.filter(e=>e.manager_id!==null).map(e=>{
+        const m=TABLES.employees.find(m=>m.employee_id===e.manager_id);
+        return {name:e.name,mgr_dept:m.department};
+      });
+    })(),
+    hint:'Use m.department AS mgr_dept — m is the manager alias of the same employees table.'},
+
+  {id:'q_co_g1',level:3,concept:'coalesce',type:'gate',ordered:false,
+    prompt:'Show each employee name and their manager_id, replacing NULL with 0.',
+    solution:'SELECT name, COALESCE(manager_id, 0) AS manager_id FROM employees',
+    expected:TABLES.employees.map(r=>({name:r.name,manager_id:r.manager_id===null?0:r.manager_id})),
+    hint:'COALESCE(manager_id, 0) returns the first non-NULL value.'},
+  {id:'q_co_g2',level:3,concept:'coalesce',type:'gate',ordered:false,
+    prompt:"For each customer, show name and last loan start_year as <em>last_year</em>. Use COALESCE to show 0 if no loans.",
+    solution:'SELECT c.name, COALESCE(MAX(l.start_year), 0) AS last_year FROM customers c LEFT JOIN loans l ON c.customer_id = l.customer_id GROUP BY c.name',
+    expected:(function(){
+      return TABLES.customers.map(c=>{
+        const ls=TABLES.loans.filter(l=>l.customer_id===c.customer_id);
+        return {name:c.name,last_year:ls.length?Math.max(...ls.map(l=>l.start_year)):0};
+      });
+    })(),
+    hint:'COALESCE(MAX(l.start_year), 0) — MAX returns NULL when LEFT JOIN finds no match; COALESCE converts that to 0.'},
+
+  {id:'q_rj_g1',level:3,concept:'right_join',type:'gate',ordered:false,
+    prompt:'List all branches and their employee count as <em>emp_count</em> using RIGHT JOIN from employees to branches.',
+    solution:'SELECT b.name, COUNT(e.employee_id) AS emp_count FROM employees e RIGHT JOIN branches b ON e.branch_id = b.branch_id GROUP BY b.name',
+    expected:(function(){
+      const m={};
+      TABLES.employees.forEach(e=>{const b=TABLES.branches.find(b=>b.branch_id===e.branch_id);if(b)m[b.name]=(m[b.name]||0)+1;});
+      return TABLES.branches.map(b=>({name:b.name,emp_count:m[b.name]||0}));
+    })(),
+    hint:'RIGHT JOIN keeps all branches. COUNT(e.employee_id) returns 0 for unmatched branches.'},
+  {id:'q_rj_g2',level:3,concept:'right_join',type:'gate',ordered:false,
+    prompt:'Show all customers and their loan count as <em>loan_count</em> using RIGHT JOIN from loans to customers.',
+    solution:'SELECT c.name, COUNT(l.loan_id) AS loan_count FROM loans l RIGHT JOIN customers c ON l.customer_id = c.customer_id GROUP BY c.name',
+    expected:TABLES.customers.map(c=>({name:c.name,loan_count:TABLES.loans.filter(l=>l.customer_id===c.customer_id).length})),
+    hint:'RIGHT JOIN from loans to customers keeps all customers. COUNT(l.loan_id) returns 0 when no loans match.'},
+
+  {id:'q_cj_g1',level:3,concept:'cross_join',type:'gate',ordered:false,
+    prompt:'How many combinations exist between all loans and all products? Return a count named <em>total</em>.',
+    solution:'SELECT COUNT(*) AS total FROM loans CROSS JOIN products',
+    expected:[{total:60}],
+    hint:'CROSS JOIN produces every possible pair — 10 loans × 6 products = 60.'},
+  {id:'q_cj_g2',level:3,concept:'cross_join',type:'gate',ordered:false,
+    prompt:'How many combinations exist between all employees and all branches? Return a count named <em>total</em>.',
+    solution:'SELECT COUNT(*) AS total FROM employees CROSS JOIN branches',
+    expected:[{total:50}],
+    hint:'CROSS JOIN produces every possible pair — 10 employees × 5 branches = 50.'},
+
+  {id:'q_aa_g1',level:3,concept:'any_all',type:'gate',ordered:false,
+    prompt:"Find customers whose credit_score is greater than ANY sme customer's credit_score. Return name and credit_score.",
+    solution:"SELECT name, credit_score FROM customers WHERE credit_score > ANY (SELECT credit_score FROM customers WHERE segment = 'sme')",
+    expected:(function(){
+      const minSme=Math.min(...TABLES.customers.filter(c=>c.segment==='sme').map(c=>c.credit_score));
+      return TABLES.customers.filter(c=>c.credit_score>minSme).map(c=>({name:c.name,credit_score:c.credit_score}));
+    })(),
+    hint:'> ANY means greater than at least one value — equivalent to > MIN of the subquery result.'},
+  {id:'q_aa_g2',level:3,concept:'any_all',type:'gate',ordered:false,
+    prompt:'Find loans with an interest_rate lower than ALL defaulted loan interest rates. Return loan_id and interest_rate.',
+    solution:"SELECT loan_id, interest_rate FROM loans WHERE interest_rate < ALL (SELECT interest_rate FROM loans WHERE status = 'defaulted')",
+    expected:(function(){
+      const minDef=Math.min(...TABLES.loans.filter(l=>l.status==='defaulted').map(l=>l.interest_rate));
+      return TABLES.loans.filter(l=>l.interest_rate<minDef).map(l=>({loan_id:l.loan_id,interest_rate:l.interest_rate}));
+    })(),
+    hint:'< ALL means less than every value in the list — equivalent to < MIN of the subquery result.'},
+
+  // L4
+  {id:'q_ct_g1',level:4,concept:'cte_basics',type:'gate',ordered:false,
+    prompt:'Write a CTE named <strong>big_loans</strong> that selects loans with amount > 10000, then count them as <em>big_count</em>.',
+    solution:'WITH big_loans AS (SELECT * FROM loans WHERE amount > 10000) SELECT COUNT(*) AS big_count FROM big_loans',
+    expected:[{big_count:TABLES.loans.filter(r=>r.amount>10000).length}],
+    hint:'WITH big_loans AS (...) SELECT COUNT(*) AS big_count FROM big_loans.'},
+  {id:'q_ct_g2',level:4,concept:'cte_basics',type:'gate',ordered:false,
+    prompt:'Write a CTE named <strong>sg_customers</strong> that selects customers from Singapore, then count them as <em>sg_count</em>.',
+    solution:"WITH sg_customers AS (SELECT * FROM customers WHERE city = 'Singapore') SELECT COUNT(*) AS sg_count FROM sg_customers",
+    expected:[{sg_count:TABLES.customers.filter(r=>r.city==='Singapore').length}],
+    hint:"WITH sg_customers AS (...) SELECT COUNT(*) AS sg_count FROM sg_customers."},
+
+  {id:'q_rn_g1',level:4,concept:'row_number',type:'gate',ordered:false,
+    prompt:'Assign a row number to each customer ordered by credit_score ascending. Return name, credit_score, and <em>row_num</em>.',
+    solution:'SELECT name, credit_score, ROW_NUMBER() OVER (ORDER BY credit_score ASC) AS row_num FROM customers',
+    expected:(function(){
+      return [...TABLES.customers].sort((a,b)=>a.credit_score-b.credit_score).map((c,i)=>({name:c.name,credit_score:c.credit_score,row_num:i+1}));
+    })(),
+    hint:'ROW_NUMBER() OVER (ORDER BY credit_score ASC).'},
+  {id:'q_rn_g2',level:4,concept:'row_number',type:'gate',ordered:false,
+    prompt:'Assign a row number to each payment ordered by amount descending. Return payment_id, amount, and <em>row_num</em>.',
+    solution:'SELECT payment_id, amount, ROW_NUMBER() OVER (ORDER BY amount DESC) AS row_num FROM payments',
+    expected:(function(){
+      return [...TABLES.payments].sort((a,b)=>b.amount-a.amount).map((p,i)=>({payment_id:p.payment_id,amount:p.amount,row_num:i+1}));
+    })(),
+    hint:'ROW_NUMBER() OVER (ORDER BY amount DESC).'},
+
+  {id:'q_rd_g1',level:4,concept:'rank_dense_rank',type:'gate',ordered:false,
+    prompt:'Rank each employee by salary descending using RANK(). Return name, salary, and <em>sal_rank</em>.',
+    solution:'SELECT name, salary, RANK() OVER (ORDER BY salary DESC) AS sal_rank FROM employees',
+    expected:(function(){
+      return [...TABLES.employees].sort((a,b)=>b.salary-a.salary).map((e,i)=>({name:e.name,salary:e.salary,sal_rank:i+1}));
+    })(),
+    hint:'RANK() OVER (ORDER BY salary DESC).'},
+  {id:'q_rd_g2',level:4,concept:'rank_dense_rank',type:'gate',ordered:false,
+    prompt:'Rank each customer by credit_score descending using DENSE_RANK(). Return name, credit_score, and <em>cr_rank</em>.',
+    solution:'SELECT name, credit_score, DENSE_RANK() OVER (ORDER BY credit_score DESC) AS cr_rank FROM customers',
+    expected:(function(){
+      return [...TABLES.customers].sort((a,b)=>b.credit_score-a.credit_score).map((c,i)=>({name:c.name,credit_score:c.credit_score,cr_rank:i+1}));
+    })(),
+    hint:'DENSE_RANK() OVER (ORDER BY credit_score DESC) — no gaps even when values tie.'},
+
+  {id:'q_rt_g1',level:4,concept:'running_total',type:'gate',ordered:false,
+    prompt:"Show each transaction's transaction_id, amount, and a running sum of amount ordered by transaction_id as <em>running_total</em>.",
+    solution:'SELECT transaction_id, amount, SUM(amount) OVER (ORDER BY transaction_id) AS running_total FROM transactions',
+    expected:(function(){
+      const s=[...TABLES.transactions].sort((a,b)=>a.transaction_id-b.transaction_id);
+      let r=0;
+      return s.map(t=>{r+=t.amount;return {transaction_id:t.transaction_id,amount:t.amount,running_total:r};});
+    })(),
+    hint:'SUM(amount) OVER (ORDER BY transaction_id) accumulates row by row.'},
+  {id:'q_rt_g2',level:4,concept:'running_total',type:'gate',ordered:false,
+    prompt:"Show each employee's employee_id, salary, and a running total of salary ordered by employee_id as <em>salary_running</em>.",
+    solution:'SELECT employee_id, salary, SUM(salary) OVER (ORDER BY employee_id) AS salary_running FROM employees',
+    expected:(function(){
+      const s=[...TABLES.employees].sort((a,b)=>a.employee_id-b.employee_id);
+      let r=0;
+      return s.map(e=>{r+=e.salary;return {employee_id:e.employee_id,salary:e.salary,salary_running:r};});
+    })(),
+    hint:'SUM(salary) OVER (ORDER BY employee_id) accumulates salary row by row.'},
+
+  {id:'q_ll_g1',level:4,concept:'lag_lead',type:'gate',ordered:false,
+    prompt:'For each loan ordered by loan_id, show loan_id, amount, and the previous loan amount as <em>prev_amount</em> (NULL for first row).',
+    solution:'SELECT loan_id, amount, LAG(amount) OVER (ORDER BY loan_id) AS prev_amount FROM loans',
+    expected:(function(){
+      const s=[...TABLES.loans].sort((a,b)=>a.loan_id-b.loan_id);
+      return s.map((l,i)=>({loan_id:l.loan_id,amount:l.amount,prev_amount:i===0?null:s[i-1].amount}));
+    })(),
+    hint:'LAG(amount) OVER (ORDER BY loan_id) — first row gets NULL.'},
+  {id:'q_ll_g2',level:4,concept:'lag_lead',type:'gate',ordered:false,
+    prompt:'For each transaction ordered by transaction_id, show transaction_id, amount, and the next amount as <em>next_amount</em> (NULL for last row).',
+    solution:'SELECT transaction_id, amount, LEAD(amount) OVER (ORDER BY transaction_id) AS next_amount FROM transactions',
+    expected:(function(){
+      const s=[...TABLES.transactions].sort((a,b)=>a.transaction_id-b.transaction_id);
+      return s.map((t,i,a)=>({transaction_id:t.transaction_id,amount:t.amount,next_amount:i===a.length-1?null:a[i+1].amount}));
+    })(),
+    hint:'LEAD(amount) OVER (ORDER BY transaction_id) — last row gets NULL.'},
+
+  {id:'q_mc_g1',level:4,concept:'multiple_cte',type:'gate',ordered:false,
+    prompt:'Two CTEs: <strong>active</strong> (active loans) and <strong>closed_loans</strong> (closed loans). Select all rows from active.',
+    solution:"WITH active AS (SELECT * FROM loans WHERE status = 'active'), closed_loans AS (SELECT * FROM loans WHERE status = 'closed') SELECT * FROM active",
+    expected:TABLES.loans.filter(r=>r.status==='active'),
+    hint:'Define both CTEs separated by a comma, then SELECT from whichever you need.'},
+  {id:'q_mc_g2',level:4,concept:'multiple_cte',type:'gate',ordered:false,
+    prompt:'Two CTEs: <strong>high_sal</strong> (salary > 70000) and <strong>low_sal</strong> (salary <= 70000). Return <em>high_count</em> and <em>low_count</em>.',
+    solution:'WITH high_sal AS (SELECT * FROM employees WHERE salary > 70000), low_sal AS (SELECT * FROM employees WHERE salary <= 70000) SELECT (SELECT COUNT(*) FROM high_sal) AS high_count, (SELECT COUNT(*) FROM low_sal) AS low_count',
+    expected:(function(){
+      return [{high_count:TABLES.employees.filter(e=>e.salary>70000).length,low_count:TABLES.employees.filter(e=>e.salary<=70000).length}];
+    })(),
+    hint:'Define both CTEs, then use scalar subqueries in the final SELECT to count each.'},
+
+  {id:'q_pa_g1',level:4,concept:'partition_agg',type:'gate',ordered:false,
+    prompt:"Show each employee's name, department, and the department's total salary as <em>dept_total</em> using a window function.",
+    solution:'SELECT name, department, SUM(salary) OVER (PARTITION BY department) AS dept_total FROM employees',
+    expected:(function(){
+      const m={};
+      TABLES.employees.forEach(e=>m[e.department]=(m[e.department]||0)+e.salary);
+      return TABLES.employees.map(e=>({name:e.name,department:e.department,dept_total:m[e.department]}));
+    })(),
+    hint:'SUM(salary) OVER (PARTITION BY department) — no ORDER BY inside OVER gives the full group total per row.'},
+  {id:'q_pa_g2',level:4,concept:'partition_agg',type:'gate',ordered:false,
+    prompt:"Show each employee's name, department, and the department's maximum salary as <em>dept_max</em>.",
+    solution:'SELECT name, department, MAX(salary) OVER (PARTITION BY department) AS dept_max FROM employees',
+    expected:(function(){
+      const m={};
+      TABLES.employees.forEach(e=>m[e.department]=Math.max(m[e.department]||0,e.salary));
+      return TABLES.employees.map(e=>({name:e.name,department:e.department,dept_max:m[e.department]}));
+    })(),
+    hint:"MAX(salary) OVER (PARTITION BY department) returns each department's highest salary on every row."},
+
+  {id:'q_nf_g1',level:4,concept:'nullif_fn',type:'gate',ordered:false,
+    prompt:"Show each customer's name and NULLIF(city, 'Singapore') as <em>city_or_null</em>.",
+    solution:"SELECT name, NULLIF(city, 'Singapore') AS city_or_null FROM customers",
+    expected:TABLES.customers.map(r=>({name:r.name,city_or_null:r.city==='Singapore'?null:r.city})),
+    hint:"NULLIF(city, 'Singapore') returns NULL when city equals 'Singapore'."},
+  {id:'q_nf_g2',level:4,concept:'nullif_fn',type:'gate',ordered:false,
+    prompt:"Show each loan's loan_id and NULLIF(status, 'active') as <em>status_or_null</em>.",
+    solution:"SELECT loan_id, NULLIF(status, 'active') AS status_or_null FROM loans",
+    expected:TABLES.loans.map(r=>({loan_id:r.loan_id,status_or_null:r.status==='active'?null:r.status})),
+    hint:"NULLIF(status, 'active') returns NULL for active loans."},
+
+  // L5
+  {id:'q_ins_g1',level:5,concept:'insert_rows',type:'gate',ordered:false,
+    prompt:"Insert a new customer: customer_id=109, name='Ivan Lee', city='Singapore', segment='retail', credit_score=690. Verify with SELECT * FROM customers WHERE customer_id = 109.",
+    solution:"INSERT INTO customers (customer_id, name, city, segment, credit_score) VALUES (109, 'Ivan Lee', 'Singapore', 'retail', 690)",
+    verify:'SELECT * FROM customers WHERE customer_id = 109',
+    expected:[{customer_id:109,name:'Ivan Lee',city:'Singapore',segment:'retail',credit_score:690}],
+    hint:"INSERT INTO customers (customer_id, name, city, segment, credit_score) VALUES (109, 'Ivan Lee', 'Singapore', 'retail', 690)."},
+  {id:'q_ins_g2',level:5,concept:'insert_rows',type:'gate',ordered:false,
+    prompt:"Insert a new branch: branch_id=6, name='Orchard', city='Singapore', country='Singapore'. Verify with SELECT * FROM branches WHERE branch_id = 6.",
+    solution:"INSERT INTO branches (branch_id, name, city, country) VALUES (6, 'Orchard', 'Singapore', 'Singapore')",
+    verify:'SELECT * FROM branches WHERE branch_id = 6',
+    expected:[{branch_id:6,name:'Orchard',city:'Singapore',country:'Singapore'}],
+    hint:"INSERT INTO branches (branch_id, name, city, country) VALUES (6, 'Orchard', 'Singapore', 'Singapore')."},
+
+  {id:'q_upd_g1',level:5,concept:'update_rows',type:'gate',ordered:false,
+    prompt:"Set interest_rate to 0 for all closed loans. Verify with SELECT loan_id, status, interest_rate FROM loans WHERE status = 'closed'.",
+    solution:"UPDATE loans SET interest_rate = 0 WHERE status = 'closed'",
+    verify:"SELECT loan_id, status, interest_rate FROM loans WHERE status = 'closed'",
+    expected:[{loan_id:2,status:'closed',interest_rate:0},{loan_id:7,status:'closed',interest_rate:0}],
+    hint:"UPDATE loans SET interest_rate = 0 WHERE status = 'closed'."},
+  {id:'q_upd_g2',level:5,concept:'update_rows',type:'gate',ordered:false,
+    prompt:"Update Frank Ho's city to 'Johor Bahru'. Verify with SELECT name, city FROM customers WHERE customer_id = 106.",
+    solution:"UPDATE customers SET city = 'Johor Bahru' WHERE customer_id = 106",
+    verify:'SELECT name, city FROM customers WHERE customer_id = 106',
+    expected:[{name:'Frank Ho',city:'Johor Bahru'}],
+    hint:"UPDATE customers SET city = 'Johor Bahru' WHERE customer_id = 106."},
+
+  {id:'q_del_g1',level:5,concept:'delete_rows',type:'gate',ordered:false,
+    prompt:"Delete all missed payments. Verify with SELECT COUNT(*) AS remaining FROM payments.",
+    solution:"DELETE FROM payments WHERE status = 'missed'",
+    verify:'SELECT COUNT(*) AS remaining FROM payments',
+    expected:[{remaining:TABLES.payments.filter(r=>r.status!=='missed').length}],
+    hint:"DELETE FROM payments WHERE status = 'missed'."},
+  {id:'q_del_g2',level:5,concept:'delete_rows',type:'gate',ordered:false,
+    prompt:"Delete all customers from Tokyo. Verify with SELECT COUNT(*) AS remaining FROM customers.",
+    solution:"DELETE FROM customers WHERE city = 'Tokyo'",
+    verify:'SELECT COUNT(*) AS remaining FROM customers',
+    expected:[{remaining:TABLES.customers.filter(r=>r.city!=='Tokyo').length}],
+    hint:"DELETE FROM customers WHERE city = 'Tokyo'."}
 ];
 
 
@@ -2307,19 +2832,12 @@ function initGate() {
   const concepts = CURRICULUM[level].concepts;
   const nextIndex = progress.completedSessions % concepts.length;
   const nextConcept = concepts[nextIndex];
-  const done = progress.completedQuestions;
 
-  const candidates = QUESTIONS.filter(q =>
+  const pool = QUESTIONS.filter(q =>
     q.level === level &&
     q.concept === nextConcept &&
-    (q.type === 'warmup' || q.type === 'consolidate') &&
-    !done.includes(q.id)
+    q.type === 'gate'
   );
-
-  // Need at least 2 gate questions; fall back to including seen ones if needed
-  const pool = candidates.length >= 2 ? candidates :
-    QUESTIONS.filter(q => q.level === level && q.concept === nextConcept &&
-      (q.type === 'warmup' || q.type === 'consolidate'));
 
   if (pool.length < 2) return null; // not enough questions — no gate
 

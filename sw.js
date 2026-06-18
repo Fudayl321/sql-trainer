@@ -1,4 +1,4 @@
-const CACHE = 'sql-trainer-v9';
+const CACHE = 'sql-trainer-v10';
 const ASSETS = [
   './index.html',
   'https://cdn.jsdelivr.net/npm/alasql@4.2.3/dist/alasql.min.js'
