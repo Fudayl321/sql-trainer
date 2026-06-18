@@ -1871,7 +1871,263 @@ const QUESTIONS = [
     solution:"DELETE FROM payments WHERE loan_id IN (SELECT loan_id FROM loans WHERE status = 'defaulted')",
     verify:"SELECT COUNT(*) AS remaining FROM payments",
     expected:[{remaining:11}],
-    hint:"DELETE FROM payments WHERE loan_id IN (SELECT loan_id FROM loans WHERE status = 'defaulted') — removes payment_id 7 (loan 4 is defaulted)"}
+    hint:"DELETE FROM payments WHERE loan_id IN (SELECT loan_id FROM loans WHERE status = 'defaulted') — removes payment_id 7 (loan 4 is defaulted)"},
+
+  // ── Level 1 challenge questions ──────────────────────────────────────────
+  {id:'q_sb4', level:1, concept:'select_basics', type:'challenge', ordered:true,
+    prompt:'Show loan_id, amount, status, and annual_interest (amount * interest_rate / 100) for all loans. Order by annual_interest descending.',
+    solution:'SELECT loan_id, amount, status, amount * interest_rate / 100 AS annual_interest FROM loans ORDER BY annual_interest DESC',
+    expected:(function(){
+      return [...TABLES.loans]
+        .map(r=>({loan_id:r.loan_id,amount:r.amount,status:r.status,annual_interest:r.amount*r.interest_rate/100}))
+        .sort((a,b)=>b.annual_interest-a.annual_interest);
+    })(),
+    hint:'SELECT loan_id, amount, status, amount * interest_rate / 100 AS annual_interest FROM loans ORDER BY annual_interest DESC'},
+
+  {id:'q_wf4', level:1, concept:'where_filter', type:'challenge', ordered:true,
+    prompt:"Find all employees in the 'Credit' department with a salary strictly above 65000. Return name, department, and salary, ordered by salary descending.",
+    solution:"SELECT name, department, salary FROM employees WHERE department = 'Credit' AND salary > 65000 ORDER BY salary DESC",
+    expected:(function(){
+      return TABLES.employees
+        .filter(e=>e.department==='Credit' && e.salary>65000)
+        .map(e=>({name:e.name,department:e.department,salary:e.salary}))
+        .sort((a,b)=>b.salary-a.salary);
+    })(),
+    hint:"WHERE department = 'Credit' AND salary > 65000 — both conditions must be true. Note: > 65000 excludes exactly 65000."},
+
+  {id:'q_wo4', level:1, concept:'where_operators', type:'challenge', ordered:false,
+    prompt:"Find loans that are (active AND amount > 10000) OR (defaulted AND interest_rate > 9). Return loan_id, status, amount, and interest_rate.",
+    solution:"SELECT loan_id, status, amount, interest_rate FROM loans WHERE (status = 'active' AND amount > 10000) OR (status = 'defaulted' AND interest_rate > 9)",
+    expected:(function(){
+      return TABLES.loans
+        .filter(r=>(r.status==='active' && r.amount>10000)||(r.status==='defaulted' && r.interest_rate>9))
+        .map(r=>({loan_id:r.loan_id,status:r.status,amount:r.amount,interest_rate:r.interest_rate}));
+    })(),
+    hint:'Use parentheses to group each AND pair: (status=... AND amount>...) OR (status=... AND interest_rate>...)'},
+
+  {id:'q_ob4', level:1, concept:'order_by', type:'challenge', ordered:true,
+    prompt:'List all employees ordered by department ascending, then salary descending within each department. Return name, department, and salary.',
+    solution:'SELECT name, department, salary FROM employees ORDER BY department ASC, salary DESC',
+    expected:(function(){
+      return [...TABLES.employees]
+        .map(e=>({name:e.name,department:e.department,salary:e.salary}))
+        .sort((a,b)=>a.department.localeCompare(b.department)||b.salary-a.salary);
+    })(),
+    hint:'ORDER BY department ASC, salary DESC — separate multiple sort keys with commas.'},
+
+  {id:'q_di4', level:1, concept:'distinct', type:'challenge', ordered:true,
+    prompt:'Show all distinct cities that appear in BOTH the customers table and the branches table. Order alphabetically.',
+    solution:'SELECT DISTINCT city FROM customers WHERE city IN (SELECT city FROM branches) ORDER BY city',
+    expected:(function(){
+      const branchCities=new Set(TABLES.branches.map(b=>b.city));
+      return [...new Set(TABLES.customers.filter(c=>branchCities.has(c.city)).map(c=>c.city))]
+        .sort().map(city=>({city}));
+    })(),
+    hint:'WHERE city IN (SELECT city FROM branches) filters to only matching cities. DISTINCT removes duplicates within customers.'},
+
+  {id:'q_li4', level:1, concept:'limit', type:'challenge', ordered:true,
+    prompt:"Show the 2 customers with the lowest credit scores from the 'retail' segment only. Return all columns.",
+    solution:"SELECT * FROM customers WHERE segment = 'retail' ORDER BY credit_score ASC LIMIT 2",
+    expected:(function(){
+      return [...TABLES.customers].filter(r=>r.segment==='retail').sort((a,b)=>a.credit_score-b.credit_score).slice(0,2);
+    })(),
+    hint:"WHERE segment = 'retail' first, then ORDER BY credit_score ASC, then LIMIT 2."},
+
+  // ── Level 2 challenge questions ──────────────────────────────────────────
+  {id:'q_ag4', level:2, concept:'aggregate_functions', type:'challenge', ordered:false,
+    prompt:'For active loans only: show total amount lent as total, average interest rate as avg_rate, and minimum interest rate as min_rate.',
+    solution:"SELECT SUM(amount) AS total, AVG(interest_rate) AS avg_rate, MIN(interest_rate) AS min_rate FROM loans WHERE status = 'active'",
+    expected:(function(){
+      const al=TABLES.loans.filter(r=>r.status==='active');
+      return [{
+        total:al.reduce((s,r)=>s+r.amount,0),
+        avg_rate:al.reduce((s,r)=>s+r.interest_rate,0)/al.length,
+        min_rate:Math.min(...al.map(r=>r.interest_rate))
+      }];
+    })(),
+    hint:"Add WHERE status = 'active' before the aggregates run. SUM, AVG, and MIN all ignore the filtered-out rows."},
+
+  {id:'q_gb4', level:2, concept:'group_by', type:'challenge', ordered:true,
+    prompt:'Show each department with its total salary budget as total_salary and employee count as headcount. Order by total_salary descending.',
+    solution:'SELECT department, SUM(salary) AS total_salary, COUNT(*) AS headcount FROM employees GROUP BY department ORDER BY total_salary DESC',
+    expected:(function(){
+      const depts={};
+      TABLES.employees.forEach(e=>{
+        if(!depts[e.department]) depts[e.department]={total_salary:0,headcount:0};
+        depts[e.department].total_salary+=e.salary;
+        depts[e.department].headcount++;
+      });
+      return Object.entries(depts)
+        .map(([department,d])=>({department,total_salary:d.total_salary,headcount:d.headcount}))
+        .sort((a,b)=>b.total_salary-a.total_salary);
+    })(),
+    hint:'GROUP BY department, then SUM(salary) AS total_salary and COUNT(*) AS headcount. ORDER BY total_salary DESC at the end.'},
+
+  {id:'q_hv4', level:2, concept:'having', type:'challenge', ordered:true,
+    prompt:'Find branches that have more than 2 employees. Show branch name and employee count as emp_count. Order by emp_count descending, then name ascending.',
+    solution:'SELECT b.name, COUNT(e.employee_id) AS emp_count FROM branches b JOIN employees e ON b.branch_id = e.branch_id GROUP BY b.name HAVING COUNT(e.employee_id) > 2 ORDER BY emp_count DESC, b.name ASC',
+    expected:(function(){
+      const counts={};
+      TABLES.employees.forEach(e=>{
+        const b=TABLES.branches.find(b=>b.branch_id===e.branch_id);
+        if(b) counts[b.name]=(counts[b.name]||0)+1;
+      });
+      return Object.entries(counts)
+        .filter(([,c])=>c>2)
+        .map(([name,emp_count])=>({name,emp_count}))
+        .sort((a,b)=>b.emp_count-a.emp_count||a.name.localeCompare(b.name));
+    })(),
+    hint:'JOIN branches to employees, GROUP BY branch name, then HAVING COUNT(e.employee_id) > 2 filters after grouping.'},
+
+  {id:'q_cw4', level:2, concept:'case_when', type:'challenge', ordered:true,
+    prompt:"Label each customer with a credit_grade: 'Excellent' if credit_score >= 750, 'Good' if >= 700, 'Fair' if >= 650, else 'Poor'. Return name, credit_score, and credit_grade, ordered by credit_score descending.",
+    solution:"SELECT name, credit_score, CASE WHEN credit_score >= 750 THEN 'Excellent' WHEN credit_score >= 700 THEN 'Good' WHEN credit_score >= 650 THEN 'Fair' ELSE 'Poor' END AS credit_grade FROM customers ORDER BY credit_score DESC",
+    expected:(function(){
+      const grade=cs=>cs>=750?'Excellent':cs>=700?'Good':cs>=650?'Fair':'Poor';
+      return [...TABLES.customers]
+        .sort((a,b)=>b.credit_score-a.credit_score)
+        .map(c=>({name:c.name,credit_score:c.credit_score,credit_grade:grade(c.credit_score)}));
+    })(),
+    hint:"CASE WHEN evaluates top-down — put the highest threshold first. ELSE catches everything below 650."},
+
+  // ── Level 3 challenge questions ──────────────────────────────────────────
+  {id:'q_ij4', level:3, concept:'inner_join', type:'challenge', ordered:true,
+    prompt:'For each payment, show customer name, loan_id, payment amount as payment_amt, and payment status. Join payments → loans → customers. Order by customer name, then loan_id.',
+    solution:'SELECT c.name, p.loan_id, p.amount AS payment_amt, p.status FROM payments p JOIN loans l ON p.loan_id = l.loan_id JOIN customers c ON l.customer_id = c.customer_id ORDER BY c.name, p.loan_id',
+    expected:(function(){
+      return TABLES.payments
+        .map(p=>{
+          const l=TABLES.loans.find(l=>l.loan_id===p.loan_id);
+          const c=TABLES.customers.find(c=>c.customer_id===l.customer_id);
+          return {name:c.name,loan_id:p.loan_id,payment_amt:p.amount,status:p.status};
+        })
+        .sort((a,b)=>a.name.localeCompare(b.name)||a.loan_id-b.loan_id);
+    })(),
+    hint:'Chain two JOINs: payments JOIN loans ON loan_id, then JOIN customers ON customer_id. ORDER BY c.name, p.loan_id.'},
+
+  {id:'q_lj4', level:3, concept:'left_join', type:'challenge', ordered:false,
+    prompt:'Find customers who have never made a transaction. Use a LEFT JOIN on transactions and check for NULL. Return name and city.',
+    solution:'SELECT c.name, c.city FROM customers c LEFT JOIN transactions t ON c.customer_id = t.customer_id WHERE t.customer_id IS NULL',
+    expected:(function(){
+      const txnCustomers=new Set(TABLES.transactions.map(t=>t.customer_id));
+      return TABLES.customers
+        .filter(c=>!txnCustomers.has(c.customer_id))
+        .map(c=>({name:c.name,city:c.city}));
+    })(),
+    hint:'LEFT JOIN keeps all customers. WHERE t.customer_id IS NULL isolates those with no matching transaction row.'},
+
+  {id:'q_sq4', level:3, concept:'subquery', type:'challenge', ordered:true,
+    prompt:"Find customers whose credit_score is above the average credit_score of all 'sme' customers. Return name and credit_score, ordered by credit_score descending.",
+    solution:"SELECT name, credit_score FROM customers WHERE credit_score > (SELECT AVG(credit_score) FROM customers WHERE segment = 'sme') ORDER BY credit_score DESC",
+    expected:(function(){
+      const sme=TABLES.customers.filter(c=>c.segment==='sme');
+      const avg=sme.reduce((s,c)=>s+c.credit_score,0)/sme.length;
+      return [...TABLES.customers]
+        .filter(c=>c.credit_score>avg)
+        .sort((a,b)=>b.credit_score-a.credit_score)
+        .map(c=>({name:c.name,credit_score:c.credit_score}));
+    })(),
+    hint:"The subquery (SELECT AVG(credit_score) FROM customers WHERE segment = 'sme') computes the threshold dynamically."},
+
+  {id:'q_ie4', level:3, concept:'in_exists', type:'challenge', ordered:false,
+    prompt:"Find employees NOT based in any Singapore branch. Use NOT IN with a subquery on branches. Return name, department, and salary.",
+    solution:"SELECT name, department, salary FROM employees WHERE branch_id NOT IN (SELECT branch_id FROM branches WHERE country = 'Singapore')",
+    expected:(function(){
+      const sgBranches=new Set(TABLES.branches.filter(b=>b.country==='Singapore').map(b=>b.branch_id));
+      return TABLES.employees
+        .filter(e=>!sgBranches.has(e.branch_id))
+        .map(e=>({name:e.name,department:e.department,salary:e.salary}));
+    })(),
+    hint:"NOT IN (SELECT branch_id FROM branches WHERE country = 'Singapore') excludes employees in Singapore branches."},
+
+  // ── Level 4 challenge questions ──────────────────────────────────────────
+  {id:'q_ct4', level:4, concept:'cte_basics', type:'challenge', ordered:true,
+    prompt:"Write a CTE named <strong>high_credit</strong> that selects customers with credit_score above 700. Then join it to loans to show each such customer's name and total loan amount as total_loans. Order by total_loans descending.",
+    solution:"WITH high_credit AS (SELECT * FROM customers WHERE credit_score > 700) SELECT h.name, SUM(l.amount) AS total_loans FROM high_credit h JOIN loans l ON h.customer_id = l.customer_id GROUP BY h.name ORDER BY total_loans DESC",
+    expected:(function(){
+      const hc=TABLES.customers.filter(c=>c.credit_score>700);
+      return hc.map(c=>({
+        name:c.name,
+        total_loans:TABLES.loans.filter(l=>l.customer_id===c.customer_id).reduce((s,l)=>s+l.amount,0)
+      })).filter(r=>r.total_loans>0).sort((a,b)=>b.total_loans-a.total_loans);
+    })(),
+    hint:'WITH high_credit AS (...) SELECT h.name, SUM(l.amount) AS total_loans FROM high_credit h JOIN loans l ON h.customer_id = l.customer_id GROUP BY h.name ORDER BY total_loans DESC'},
+
+  {id:'q_rn4', level:4, concept:'row_number', type:'challenge', ordered:true,
+    prompt:'Show each employee\'s name, department, salary, and their row number within their department ordered by salary descending as dept_rank. Use ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC). Order results by department, then dept_rank.',
+    solution:'SELECT name, department, salary, ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC) AS dept_rank FROM employees ORDER BY department, dept_rank',
+    expected:(function(){
+      const byDept={};
+      TABLES.employees.forEach(e=>{
+        if(!byDept[e.department]) byDept[e.department]=[];
+        byDept[e.department].push(e);
+      });
+      const result=[];
+      Object.keys(byDept).sort().forEach(dept=>{
+        [...byDept[dept]].sort((a,b)=>b.salary-a.salary).forEach((e,i)=>{
+          result.push({name:e.name,department:e.department,salary:e.salary,dept_rank:i+1});
+        });
+      });
+      return result;
+    })(),
+    hint:'ROW_NUMBER() OVER (PARTITION BY department ORDER BY salary DESC) — PARTITION BY resets the counter per department.'},
+
+  {id:'q_rd4', level:4, concept:'rank_dense_rank', type:'challenge', ordered:true,
+    prompt:'For each transaction, show transaction_id, customer_id, amount, and the transaction\'s rank within that customer\'s transactions by amount descending using DENSE_RANK() as txn_rank. Order by customer_id, txn_rank.',
+    solution:'SELECT transaction_id, customer_id, amount, DENSE_RANK() OVER (PARTITION BY customer_id ORDER BY amount DESC) AS txn_rank FROM transactions ORDER BY customer_id, txn_rank',
+    expected:(function(){
+      const byCust={};
+      TABLES.transactions.forEach(t=>{
+        if(!byCust[t.customer_id]) byCust[t.customer_id]=[];
+        byCust[t.customer_id].push(t);
+      });
+      const result=[];
+      Object.keys(byCust).sort((a,b)=>Number(a)-Number(b)).forEach(cid=>{
+        [...byCust[cid]].sort((a,b)=>b.amount-a.amount).forEach((t,i)=>{
+          result.push({transaction_id:t.transaction_id,customer_id:t.customer_id,amount:t.amount,txn_rank:i+1});
+        });
+      });
+      return result;
+    })(),
+    hint:'DENSE_RANK() OVER (PARTITION BY customer_id ORDER BY amount DESC) — ranks reset per customer, no gaps on ties.'},
+
+  {id:'q_rt4', level:4, concept:'running_total', type:'challenge', ordered:true,
+    prompt:'Show each payment\'s payment_id, loan_id, amount, and a running_total that resets per loan (running sum of payments within each loan, ordered by payment_id). Order by loan_id, payment_id.',
+    solution:'SELECT payment_id, loan_id, amount, SUM(amount) OVER (PARTITION BY loan_id ORDER BY payment_id) AS running_total FROM payments ORDER BY loan_id, payment_id',
+    expected:(function(){
+      const byLoan={};
+      [...TABLES.payments].sort((a,b)=>a.payment_id-b.payment_id).forEach(p=>{
+        if(!byLoan[p.loan_id]) byLoan[p.loan_id]=[];
+        byLoan[p.loan_id].push(p);
+      });
+      const result=[];
+      Object.keys(byLoan).sort((a,b)=>Number(a)-Number(b)).forEach(lid=>{
+        let running=0;
+        byLoan[lid].forEach(p=>{running+=p.amount; result.push({payment_id:p.payment_id,loan_id:p.loan_id,amount:p.amount,running_total:running});});
+      });
+      return result;
+    })(),
+    hint:'SUM(amount) OVER (PARTITION BY loan_id ORDER BY payment_id) — PARTITION BY resets the running total for each loan.'},
+
+  {id:'q_ll4', level:4, concept:'lag_lead', type:'challenge', ordered:true,
+    prompt:'For each payment within each loan (ordered by payment_id), show payment_id, loan_id, amount, the previous payment amount in that loan as prev_amt (NULL if first), and next payment amount as next_amt (NULL if last). Order by loan_id, payment_id.',
+    solution:'SELECT payment_id, loan_id, amount, LAG(amount) OVER (PARTITION BY loan_id ORDER BY payment_id) AS prev_amt, LEAD(amount) OVER (PARTITION BY loan_id ORDER BY payment_id) AS next_amt FROM payments ORDER BY loan_id, payment_id',
+    expected:(function(){
+      const byLoan={};
+      [...TABLES.payments].sort((a,b)=>a.payment_id-b.payment_id).forEach(p=>{
+        if(!byLoan[p.loan_id]) byLoan[p.loan_id]=[];
+        byLoan[p.loan_id].push(p);
+      });
+      const result=[];
+      Object.keys(byLoan).sort((a,b)=>Number(a)-Number(b)).forEach(lid=>{
+        const ps=byLoan[lid];
+        ps.forEach((p,i)=>{
+          result.push({payment_id:p.payment_id,loan_id:p.loan_id,amount:p.amount,prev_amt:i===0?null:ps[i-1].amount,next_amt:i===ps.length-1?null:ps[i+1].amount});
+        });
+      });
+      return result;
+    })(),
+    hint:'Use both LAG and LEAD with PARTITION BY loan_id ORDER BY payment_id — each resets per loan. Both return NULL at the boundaries.'}
 ];
 
 
