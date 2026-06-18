@@ -4907,7 +4907,19 @@ function hideSyncPill() {
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 
-renderToday();
+async function initApp() {
+  const userId = localStorage.getItem(USER_ID_KEY);
+  if (!userId) {
+    showUsernameModal();
+    return; // modal submit calls initApp() again after saving username
+  }
+  progress = await loadProgress();
+  updateHeader();
+  renderProgress();
+  renderToday();
+}
+
+initApp();
 
 // ─── SERVICE WORKER ──────────────────────────────────────────────────────────
 
