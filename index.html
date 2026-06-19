@@ -785,8 +785,8 @@
       animation: slide-in-right 0.35s ease;
     }
 
-    /* ── Username modal ───────────────────────────────────── */
-    #username-modal {
+    /* ── Auth modal ─────────────────────────────────────────── */
+    #auth-modal {
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,0.85);
@@ -795,7 +795,7 @@
       justify-content: center;
       z-index: 1000;
     }
-    .username-box {
+    .auth-box {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: 16px;
@@ -804,19 +804,35 @@
       width: 90%;
       text-align: center;
     }
-    .username-box h2 {
-      font-size: 20px;
+    .auth-box h2 {
+      font-size: 22px;
       font-weight: 800;
       color: var(--accent);
-      margin-bottom: 10px;
-    }
-    .username-box p {
-      font-size: 14px;
-      color: var(--text-dim);
       margin-bottom: 18px;
-      line-height: 1.5;
     }
-    #username-input {
+    .auth-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .auth-tab-btn {
+      flex: 1;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-dim);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .auth-tab-btn.active {
+      background: var(--accent);
+      color: #000;
+      border-color: var(--accent);
+    }
+    .auth-box input {
       width: 100%;
       background: var(--code-bg);
       border: 1px solid var(--border);
@@ -824,13 +840,12 @@
       color: var(--text);
       font-size: 16px;
       padding: 12px;
-      margin-bottom: 14px;
+      margin-bottom: 10px;
       outline: none;
-      text-align: center;
       box-sizing: border-box;
     }
-    #username-input:focus { border-color: var(--accent); box-shadow: var(--glow-cyan); }
-    #username-submit {
+    .auth-box input:focus { border-color: var(--accent); box-shadow: var(--glow-cyan); }
+    #reg-submit, #login-submit {
       width: 100%;
       background: var(--accent);
       color: #000;
@@ -841,8 +856,15 @@
       font-weight: 700;
       cursor: pointer;
       transition: opacity 0.2s;
+      margin-top: 4px;
     }
-    #username-submit:disabled { opacity: 0.35; cursor: not-allowed; }
+    #reg-submit:disabled, #login-submit:disabled { opacity: 0.35; cursor: not-allowed; }
+    .auth-error {
+      color: var(--error);
+      font-size: 13px;
+      margin-top: 10px;
+      min-height: 18px;
+    }
 
     /* ── Sync pill ────────────────────────────────────────── */
     #sync-pill {
@@ -878,7 +900,7 @@
       color: var(--text-dim);
     }
     .sync-info strong { color: var(--text); }
-    #change-username-btn {
+    #logout-progress-btn {
       background: none;
       border: 1px solid var(--border);
       color: var(--text-dim);
@@ -887,6 +909,18 @@
       font-size: 12px;
       cursor: pointer;
     }
+    #logout-progress-btn:hover { color: var(--error); border-color: var(--error); }
+    #logout-header-btn {
+      background: none;
+      border: none;
+      color: var(--text-dim);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 2px 6px;
+      line-height: 1;
+      transition: color 0.15s;
+    }
+    #logout-header-btn:hover { color: var(--error); }
   </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.108.2/dist/umd/supabase.min.js"
         integrity="sha384-JWEyvHh+lRf0sN/WWY+QTQwX+CyWqmNg4tkc8GQzAMEtR2wGNrCJlvnu1lHD1kDm"
@@ -894,13 +928,27 @@
 </head>
 <body>
 
-<!-- Username modal — shown on first visit if no USER_ID_KEY in localStorage -->
-<div id="username-modal" style="display:none">
-  <div class="username-box">
-    <h2>Welcome to SQL Trainer ⚡</h2>
-    <p>Choose a username to save your progress across devices. Pick something unique.</p>
-    <input id="username-input" type="text" placeholder="e.g. dello123" maxlength="30" autocomplete="off" />
-    <button id="username-submit" disabled>Start Training</button>
+<!-- Auth modal — shown when no Supabase session exists -->
+<div id="auth-modal" style="display:none">
+  <div class="auth-box">
+    <h2>⚡ SQL Trainer</h2>
+    <div class="auth-tabs">
+      <button class="auth-tab-btn active" id="tab-register-btn">Register</button>
+      <button class="auth-tab-btn" id="tab-login-btn">Login</button>
+    </div>
+    <div id="auth-register-form">
+      <input id="reg-username" type="text" placeholder="Username (min 3 chars)" maxlength="30" autocomplete="off" />
+      <input id="reg-password" type="password" placeholder="Password (min 6 chars)" maxlength="100" autocomplete="new-password" />
+      <input id="reg-confirm" type="password" placeholder="Confirm password" maxlength="100" autocomplete="new-password" />
+      <button id="reg-submit" disabled>Create Account</button>
+      <div class="auth-error" id="reg-error"></div>
+    </div>
+    <div id="auth-login-form" style="display:none">
+      <input id="login-username" type="text" placeholder="Username" maxlength="30" autocomplete="off" />
+      <input id="login-password" type="password" placeholder="Password" maxlength="100" autocomplete="current-password" />
+      <button id="login-submit" disabled>Login</button>
+      <div class="auth-error" id="login-error"></div>
+    </div>
   </div>
 </div>
 
@@ -910,6 +958,7 @@
     <span class="badge level" id="hdr-level">Lvl 1</span>
     <span class="badge streak" id="hdr-streak">🔥 0</span>
     <span id="sync-pill"></span>
+    <button id="logout-header-btn" aria-label="Logout">⏻</button>
   </div>
 </div>
 
@@ -938,7 +987,7 @@
     <button class="reset-btn" id="reset-btn">Reset all progress</button>
     <div class="sync-info">
       <span>Syncing as: <strong id="sync-username">—</strong></span>
-      <button id="change-username-btn">Change</button>
+      <button id="logout-progress-btn">Logout</button>
     </div>
   </div>
 
@@ -2975,7 +3024,6 @@ const QUESTIONS = [
 // ─── STATE ───────────────────────────────────────────────────────────────────
 
 const STORAGE_KEY = 'sql_trainer_v2';
-const USER_ID_KEY = 'sql_trainer_user_id';
 const SUPABASE_URL = 'https://fzpohuurshpakcnshafpt.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ6cG9odXVzaHBha2Nuc2hhZnB0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE3ODg5NzgsImV4cCI6MjA5NzM2NDk3OH0.gLE8NDFrZX-rS0xY_gGtK2PzHampIQ2c-s_nGm_ZtxA';
 const _sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -3003,13 +3051,13 @@ async function loadProgress() {
   } catch(e) {}
 
   // Fallback: fetch from Supabase when localStorage has no real progress
-  const userId = localStorage.getItem(USER_ID_KEY);
-  if (userId) {
+  const { data: { session } } = await _sb.auth.getSession();
+  if (session) {
     try {
       const { data } = await _sb
         .from('sql_trainer_progress')
         .select('progress_json')
-        .eq('user_id', userId)
+        .eq('user_id', session.user.id)
         .single();
       if (data?.progress_json) {
         const p = Object.assign({}, DEFAULT_PROGRESS, JSON.parse(data.progress_json));
@@ -3028,13 +3076,13 @@ function saveProgress(p) {
 }
 
 async function _syncToSupabase(p) {
-  const userId = localStorage.getItem(USER_ID_KEY);
-  if (!userId) return;
+  const { data: { session } } = await _sb.auth.getSession();
+  if (!session) return;
   showSyncPill('saving');
   try {
     const { error } = await _sb
       .from('sql_trainer_progress')
-      .upsert({ user_id: userId, progress_json: JSON.stringify(p), updated_at: new Date().toISOString() });
+      .upsert({ user_id: session.user.id, progress_json: JSON.stringify(p), updated_at: new Date().toISOString() });
     if (error) throw error;
     hideSyncPill();
   } catch(e) {
@@ -4784,16 +4832,22 @@ function renderProgress() {
   if (streakAlive) animate('streak-toast', progress.streak);
 
   // Sync info
-  const syncUsernameEl = document.getElementById('sync-username');
-  if (syncUsernameEl) syncUsernameEl.textContent = localStorage.getItem(USER_ID_KEY) || '—';
-  const changeBtn = document.getElementById('change-username-btn');
-  if (changeBtn && !changeBtn._wired) {
-    changeBtn._wired = true;
-    changeBtn.addEventListener('click', () => {
-      if (window.confirm('Change username? Your current progress will remain in Supabase under the old username.')) {
-        localStorage.removeItem(USER_ID_KEY);
-        location.reload();
-      }
+  _sb.auth.getSession().then(({ data: { session } }) => {
+    const syncUsernameEl = document.getElementById('sync-username');
+    if (syncUsernameEl) syncUsernameEl.textContent = session?.user?.user_metadata?.username || '—';
+  });
+  const logoutProgressBtn = document.getElementById('logout-progress-btn');
+  if (logoutProgressBtn && !logoutProgressBtn._wired) {
+    logoutProgressBtn._wired = true;
+    logoutProgressBtn.addEventListener('click', () => {
+      if (window.confirm('Log out?')) logout();
+    });
+  }
+  const logoutHeaderBtn = document.getElementById('logout-header-btn');
+  if (logoutHeaderBtn && !logoutHeaderBtn._wired) {
+    logoutHeaderBtn._wired = true;
+    logoutHeaderBtn.addEventListener('click', () => {
+      if (window.confirm('Log out?')) logout();
     });
   }
 }
@@ -4858,12 +4912,12 @@ function switchTab(name) {
 
 // ─── RESET ───────────────────────────────────────────────────────────────────
 
-document.getElementById('reset-btn').addEventListener('click', () => {
+document.getElementById('reset-btn').addEventListener('click', async () => {
   if (window.confirm('Reset all progress? This cannot be undone.')) {
     localStorage.removeItem(STORAGE_KEY);
     progress = Object.assign({}, DEFAULT_PROGRESS);
-    const userId = localStorage.getItem(USER_ID_KEY);
-    if (userId) _sb.from('sql_trainer_progress').delete().eq('user_id', userId);
+    const { data: { session } } = await _sb.auth.getSession();
+    if (session) _sb.from('sql_trainer_progress').delete().eq('user_id', session.user.id);
     renderToday();
     renderProgress();
     updateHeader();
@@ -4906,27 +4960,107 @@ function initHighlighters() {
   });
 }
 
-// ─── USERNAME MODAL ──────────────────────────────────────────────────────────
+// ─── AUTH MODAL ──────────────────────────────────────────────────────────────
 
-function showUsernameModal() {
-  const modal = document.getElementById('username-modal');
+function showAuthModal() {
+  const modal = document.getElementById('auth-modal');
   modal.style.display = 'flex';
-  const input = document.getElementById('username-input');
-  const btn = document.getElementById('username-submit');
-  input.addEventListener('input', () => {
-    btn.disabled = input.value.trim().length < 3;
+
+  // Tab switching
+  document.getElementById('tab-register-btn').addEventListener('click', () => {
+    document.getElementById('tab-register-btn').classList.add('active');
+    document.getElementById('tab-login-btn').classList.remove('active');
+    document.getElementById('auth-register-form').style.display = '';
+    document.getElementById('auth-login-form').style.display = 'none';
+    document.getElementById('reg-error').textContent = '';
+    setTimeout(() => document.getElementById('reg-username').focus(), 50);
   });
-  btn.addEventListener('click', () => {
-    const val = input.value.trim();
-    if (val.length < 3) return;
-    localStorage.setItem(USER_ID_KEY, val);
-    modal.style.display = 'none';
-    initApp();
+  document.getElementById('tab-login-btn').addEventListener('click', () => {
+    document.getElementById('tab-login-btn').classList.add('active');
+    document.getElementById('tab-register-btn').classList.remove('active');
+    document.getElementById('auth-login-form').style.display = '';
+    document.getElementById('auth-register-form').style.display = 'none';
+    document.getElementById('login-error').textContent = '';
+    setTimeout(() => document.getElementById('login-username').focus(), 50);
   });
-  input.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !btn.disabled) btn.click();
+
+  // Register form
+  const regUsername = document.getElementById('reg-username');
+  const regPassword = document.getElementById('reg-password');
+  const regConfirm  = document.getElementById('reg-confirm');
+  const regSubmit   = document.getElementById('reg-submit');
+  const regError    = document.getElementById('reg-error');
+  function validateReg() {
+    regSubmit.disabled = !(regUsername.value.trim().length >= 3 &&
+      regPassword.value.length >= 6 &&
+      regConfirm.value === regPassword.value);
+  }
+  regUsername.addEventListener('input', validateReg);
+  regPassword.addEventListener('input', validateReg);
+  regConfirm.addEventListener('input', validateReg);
+  regSubmit.addEventListener('click', async () => {
+    regError.textContent = '';
+    regSubmit.disabled = true;
+    regSubmit.textContent = 'Creating…';
+    const username = regUsername.value.trim();
+    const password = regPassword.value;
+    const { error } = await _sb.auth.signUp(
+      { email: `${username}@sql-trainer.app`, password },
+      { data: { username } }
+    );
+    if (error) {
+      regError.textContent = error.message.includes('already registered')
+        ? 'Username already exists. Try logging in.'
+        : 'Could not create account. Check your connection.';
+      regSubmit.disabled = false;
+      regSubmit.textContent = 'Create Account';
+    } else {
+      modal.style.display = 'none';
+      initApp();
+    }
   });
-  setTimeout(() => input.focus(), 50);
+  regUsername.addEventListener('keydown', e => { if (e.key === 'Enter') regPassword.focus(); });
+  regPassword.addEventListener('keydown', e => { if (e.key === 'Enter') regConfirm.focus(); });
+  regConfirm.addEventListener('keydown',  e => { if (e.key === 'Enter' && !regSubmit.disabled) regSubmit.click(); });
+
+  // Login form
+  const loginUsername = document.getElementById('login-username');
+  const loginPassword = document.getElementById('login-password');
+  const loginSubmit   = document.getElementById('login-submit');
+  const loginError    = document.getElementById('login-error');
+  function validateLogin() {
+    loginSubmit.disabled = !(loginUsername.value.trim().length >= 3 && loginPassword.value.length >= 1);
+  }
+  loginUsername.addEventListener('input', validateLogin);
+  loginPassword.addEventListener('input', validateLogin);
+  loginSubmit.addEventListener('click', async () => {
+    loginError.textContent = '';
+    loginSubmit.disabled = true;
+    loginSubmit.textContent = 'Logging in…';
+    const username = loginUsername.value.trim();
+    const password = loginPassword.value;
+    const { error } = await _sb.auth.signInWithPassword(
+      { email: `${username}@sql-trainer.app`, password }
+    );
+    if (error) {
+      loginError.textContent = 'Incorrect username or password.';
+      loginSubmit.disabled = false;
+      loginSubmit.textContent = 'Login';
+    } else {
+      modal.style.display = 'none';
+      initApp();
+    }
+  });
+  loginUsername.addEventListener('keydown', e => { if (e.key === 'Enter') loginPassword.focus(); });
+  loginPassword.addEventListener('keydown', e => { if (e.key === 'Enter' && !loginSubmit.disabled) loginSubmit.click(); });
+
+  setTimeout(() => document.getElementById('reg-username').focus(), 50);
+}
+
+async function logout() {
+  await _sb.auth.signOut();
+  localStorage.removeItem(STORAGE_KEY);
+  location.reload();
 }
 
 function showSyncPill(state) {
@@ -4945,10 +5079,10 @@ function hideSyncPill() {
 // ─── INIT ────────────────────────────────────────────────────────────────────
 
 async function initApp() {
-  const userId = localStorage.getItem(USER_ID_KEY);
-  if (!userId) {
-    showUsernameModal();
-    return; // modal submit calls initApp() again after saving username
+  const { data: { session } } = await _sb.auth.getSession();
+  if (!session) {
+    showAuthModal();
+    return;
   }
   progress = await loadProgress();
   updateHeader();
