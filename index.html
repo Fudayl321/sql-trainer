@@ -5005,7 +5005,7 @@ function showAuthModal() {
     const username = regUsername.value.trim();
     const password = regPassword.value;
     const { error } = await _sb.auth.signUp({
-      email: `${username}@sql-trainer.app`,
+      email: `${username}@sqltrainer.com`,
       password,
       options: { data: { username } }
     });
@@ -5042,7 +5042,7 @@ function showAuthModal() {
     const username = loginUsername.value.trim();
     const password = loginPassword.value;
     const { error } = await _sb.auth.signInWithPassword(
-      { email: `${username}@sql-trainer.app`, password }
+      { email: `${username}@sqltrainer.com`, password }
     );
     if (error) {
       loginError.textContent = 'Incorrect username or password.';
