@@ -5004,14 +5004,16 @@ function showAuthModal() {
     regSubmit.textContent = 'Creating…';
     const username = regUsername.value.trim();
     const password = regPassword.value;
-    const { error } = await _sb.auth.signUp(
-      { email: `${username}@sql-trainer.app`, password },
-      { data: { username } }
-    );
+    const { error } = await _sb.auth.signUp({
+      email: `${username}@sql-trainer.app`,
+      password,
+      options: { data: { username } }
+    });
     if (error) {
-      regError.textContent = error.message.includes('already registered')
+      console.error('[SQL Trainer] signUp error:', error);
+      regError.textContent = error.message.includes('already registered') || error.message.includes('User already registered')
         ? 'Username already exists. Try logging in.'
-        : 'Could not create account. Check your connection.';
+        : error.message || 'Could not create account. Check your connection.';
       regSubmit.disabled = false;
       regSubmit.textContent = 'Create Account';
     } else {
