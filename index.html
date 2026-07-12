@@ -338,6 +338,38 @@
       text-align: right;
     }
 
+    /* Diff view */
+    .diff-view { margin-top: 8px; }
+    .diff-view .diff-pane-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+    .diff-view .diff-pane-label.yours { color: var(--error); }
+    .diff-view .diff-pane-label.expected { color: var(--accent); }
+    .diff-view .diff-separator {
+      height: 1px;
+      background: var(--border);
+      margin: 10px 0;
+    }
+    .diff-view td.diff-cell-wrong {
+      background: rgba(239,68,68,0.18);
+      color: #fca5a5;
+      font-weight: 600;
+    }
+    .diff-view tr.diff-row-extra td { background: rgba(239,68,68,0.10); }
+    .diff-view tr.diff-row-missing td { background: rgba(245,158,11,0.12); color: #fcd34d; }
+    .diff-shape-msg {
+      font-size: 12px;
+      color: var(--warning);
+      background: rgba(245,158,11,0.1);
+      border: 1px solid rgba(245,158,11,0.3);
+      border-radius: 6px;
+      padding: 8px 10px;
+      margin-top: 8px;
+    }
+
     /* Session complete banner */
     .complete-banner {
       background: linear-gradient(135deg, rgba(34,197,94,0.15), rgba(0,212,255,0.1));
@@ -3533,6 +3565,101 @@ function buildResultTable(rows) {
   return html;
 }
 
+function buildDiffTable(rows, cols, highlightFn) {
+  if (!rows || rows.length === 0) return '<p style="color:var(--text-dim);font-size:13px;">No rows returned.</p>';
+  const preview = rows.slice(0, 5);
+  const more = rows.length > 5 ? rows.length - 5 : 0;
+  let html = '<table><thead><tr>' + cols.map(c => `<th>${escCell(c)}</th>`).join('') + '</tr></thead><tbody>';
+  preview.forEach((row, ri) => {
+    const { rowClass, cellClass } = highlightFn(row, ri);
+    html += `<tr class="${rowClass}">` + cols.map(c => `<td class="${cellClass(c)}">${escCell(row[c])}</td>`).join('') + '</tr>';
+  });
+  html += '</tbody></table>';
+  if (more) html += `<div class="more-rows">+${more} more row(s)</div>`;
+  return html;
+}
+
+function buildDiffView(actual, expected, ordered) {
+  const actualCols  = actual.length  ? Object.keys(actual[0])  : [];
+  const expectedCols = expected.length ? Object.keys(expected[0]) : [];
+  const colsMatch = JSON.stringify(actualCols) === JSON.stringify(expectedCols);
+
+  if (!colsMatch) {
+    return `<div class="diff-shape-msg">⚠ Column mismatch — your query returned columns [${actualCols.join(', ')}] but expected [${expectedCols.join(', ')}].</div>` +
+      `<div class="diff-view">` +
+      `<div class="diff-pane-label yours">YOUR RESULT (${actual.length} row${actual.length !== 1 ? 's' : ''})</div>` +
+      buildResultTable(actual) +
+      `<div class="diff-separator"></div>` +
+      `<div class="diff-pane-label expected">EXPECTED (${expected.length} row${expected.length !== 1 ? 's' : ''})</div>` +
+      buildResultTable(expected) +
+      `</div>`;
+  }
+
+  const cols = expectedCols;
+  const norm = r => JSON.stringify(cols.map(c => r[c] === null || r[c] === undefined ? null : String(r[c])));
+
+  if (ordered) {
+    // Align row-by-row, highlight wrong cells
+    const maxLen = Math.max(actual.length, expected.length);
+    const paddedActual   = [...actual,   ...Array(Math.max(0, maxLen - actual.length)).fill(null)];
+    const paddedExpected = [...expected, ...Array(Math.max(0, maxLen - expected.length)).fill(null)];
+
+    const yourTable = buildDiffTable(paddedActual, cols, (row, ri) => {
+      const expRow = paddedExpected[ri];
+      if (!row)    return { rowClass: 'diff-row-extra',   cellClass: () => '' };
+      if (!expRow) return { rowClass: 'diff-row-extra',   cellClass: () => '' };
+      return {
+        rowClass: '',
+        cellClass: c => expRow && String(row[c] ?? null) !== String(expRow[c] ?? null) ? 'diff-cell-wrong' : ''
+      };
+    });
+    const expTable = buildDiffTable(paddedExpected, cols, (row, ri) => {
+      if (!row) return { rowClass: 'diff-row-missing', cellClass: () => '' };
+      return { rowClass: '', cellClass: () => '' };
+    });
+
+    return `<div class="diff-view">` +
+      `<div class="diff-pane-label yours">YOUR RESULT (${actual.length} row${actual.length !== 1 ? 's' : ''})</div>${yourTable}` +
+      `<div class="diff-separator"></div>` +
+      `<div class="diff-pane-label expected">EXPECTED (${expected.length} row${expected.length !== 1 ? 's' : ''})</div>${expTable}` +
+      `</div>`;
+  }
+
+  // Unordered: find extra and missing rows
+  const expSet = new Map();
+  expected.forEach(r => { const k = norm(r); expSet.set(k, (expSet.get(k) || 0) + 1); });
+  const actSet = new Map();
+  actual.forEach(r => { const k = norm(r); actSet.set(k, (actSet.get(k) || 0) + 1); });
+
+  const yourTable = buildDiffTable(actual, cols, (row) => {
+    const k = norm(row);
+    const isExtra = !expSet.has(k) || (actSet.get(k) || 0) > (expSet.get(k) || 0);
+    return { rowClass: isExtra ? 'diff-row-extra' : '', cellClass: () => '' };
+  });
+
+  const missingRows = [];
+  expSet.forEach((count, k) => {
+    const have = actSet.get(k) || 0;
+    if (have < count) {
+      const row = expected.find(r => norm(r) === k);
+      for (let i = 0; i < count - have; i++) missingRows.push(row);
+    }
+  });
+
+  const missingHtml = missingRows.length
+    ? `<div style="font-size:11px;color:var(--warning);font-weight:700;margin:8px 0 4px">MISSING FROM YOUR RESULT (${missingRows.length} row${missingRows.length !== 1 ? 's' : ''})</div>` +
+      buildDiffTable(missingRows, cols, () => ({ rowClass: 'diff-row-missing', cellClass: () => '' }))
+    : '';
+
+  return `<div class="diff-view">` +
+    `<div class="diff-pane-label yours">YOUR RESULT (${actual.length} row${actual.length !== 1 ? 's' : ''})</div>${yourTable}` +
+    missingHtml +
+    `<div class="diff-separator"></div>` +
+    `<div class="diff-pane-label expected">EXPECTED (${expected.length} row${expected.length !== 1 ? 's' : ''})</div>` +
+    buildResultTable(expected) +
+    `</div>`;
+}
+
 // ─── SHOW SOLUTION ───────────────────────────────────────────────────────────
 
 function showSolution(qKey) {
@@ -3700,12 +3827,7 @@ function submitAnswer(qKey) {
     fb.innerHTML = `<div>${msg}</div><div class="hint" style="margin-top:6px">Attempts: ${qSlot.attempts}</div>${solutionBtn}`;
     if (!ev.error) {
       rp.className = 'result-preview show';
-      const yourRows = ev.result || [];
-      rp.innerHTML =
-        `<div style="font-size:11px;color:var(--error);font-weight:700;margin-bottom:4px">YOUR RESULT (${yourRows.length} row${yourRows.length !== 1 ? 's' : ''})</div>` +
-        buildResultTable(yourRows) +
-        `<div style="font-size:11px;color:var(--accent);font-weight:700;margin:10px 0 4px">EXPECTED (${qdef.expected.length} row${qdef.expected.length !== 1 ? 's' : ''})</div>` +
-        buildResultTable(qdef.expected);
+      rp.innerHTML = buildDiffView(ev.result || [], qdef.expected, qdef.ordered || false);
     } else {
       rp.className = 'result-preview';
     }
@@ -4796,12 +4918,7 @@ function submitPractice(qId) {
       <button onclick="showPracticeSolution('${qId}')" style="display:block;margin-top:10px;background:none;border:1px solid var(--warning);color:var(--warning);border-radius:6px;padding:6px 14px;font-size:12px;cursor:pointer;font-weight:600">Show Solution</button>`;
     if (!ev.error) {
       rp.className = 'result-preview show';
-      const yourRows = ev.result || [];
-      rp.innerHTML =
-        `<div style="font-size:11px;color:var(--error);font-weight:700;margin-bottom:4px">YOUR RESULT (${yourRows.length} row${yourRows.length !== 1 ? 's' : ''})</div>` +
-        buildResultTable(yourRows) +
-        `<div style="font-size:11px;color:var(--accent);font-weight:700;margin:10px 0 4px">EXPECTED (${qdef.expected.length} row${qdef.expected.length !== 1 ? 's' : ''})</div>` +
-        buildResultTable(qdef.expected);
+      rp.innerHTML = buildDiffView(ev.result || [], qdef.expected, qdef.ordered || false);
     } else {
       rp.className = 'result-preview';
     }
