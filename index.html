@@ -1405,6 +1405,17 @@ const QUESTIONS = [
     hint:"LEFT JOIN keeps all rows from the left table (customers). COUNT(l.loan_id) returns 0 when there's no match — COUNT(*) would return 1."
   },
   {
+    id:'q_ljs', level:3, concept:'left_join', type:'stretch', ordered:false,
+    prompt:'Show all branches and the count of employees at each branch named emp_count — include branches with no employees.',
+    solution:'SELECT b.name, COUNT(e.employee_id) AS emp_count FROM branches b LEFT JOIN employees e ON b.branch_id = e.branch_id GROUP BY b.name',
+    expected:(function(){
+      const map={};
+      TABLES.employees.forEach(e=>map[e.branch_id]=(map[e.branch_id]||0)+1);
+      return TABLES.branches.map(b=>({name:b.name,emp_count:map[b.branch_id]||0}));
+    })(),
+    hint:'LEFT JOIN keeps all branches. COUNT(e.employee_id) returns 0 when no employees are assigned — use the employee column in COUNT, not COUNT(*).'
+  },
+  {
     id:'q24', level:3, concept:'subquery', type:'consolidate', ordered:false,
     prompt:'Find all loans with an amount GREATER than the average loan amount. Return all columns.',
     solution:'SELECT * FROM loans WHERE amount > (SELECT AVG(amount) FROM loans)',
@@ -1430,6 +1441,16 @@ const QUESTIONS = [
       return TABLES.customers.filter(c=>ids.has(c.customer_id)).map(c=>({name:c.name}));
     })(),
     hint:"IN (SELECT customer_id FROM loans WHERE status = 'defaulted') — the subquery returns the list to check against."
+  },
+  {
+    id:'q_ies', level:3, concept:'in_exists', type:'stretch', ordered:false,
+    prompt:"Find customers who have made at least one transaction in the 'salary' category. Use EXISTS. Return customer name and city.",
+    solution:"SELECT name, city FROM customers c WHERE EXISTS (SELECT 1 FROM transactions t WHERE t.customer_id = c.customer_id AND t.category = 'salary')",
+    expected:(function(){
+      const salaryCustomers=new Set(TABLES.transactions.filter(t=>t.category==='salary').map(t=>t.customer_id));
+      return TABLES.customers.filter(c=>salaryCustomers.has(c.customer_id)).map(c=>({name:c.name,city:c.city}));
+    })(),
+    hint:"EXISTS (SELECT 1 FROM transactions t WHERE t.customer_id = c.customer_id AND t.category = 'salary') — returns true if the subquery finds any matching row."
   },
   {
     id:'q27', level:4, concept:'cte_basics', type:'consolidate', ordered:false,
@@ -1511,6 +1532,20 @@ const QUESTIONS = [
       return sorted.map(l=>{running+=l.amount; return {loan_id:l.loan_id,amount:l.amount,running_total:running};});
     })(),
     hint:"SELECT loan_id, amount, SUM(amount) OVER (ORDER BY loan_id) AS running_total FROM loans — the ORDER BY inside OVER controls accumulation order."
+  },
+  {
+    id:'q_rts', level:4, concept:'running_total', type:'stretch', ordered:false,
+    prompt:"For each transaction, show transaction_id, customer_id, amount, and a running total of that customer's transactions (ordered by transaction_id) named customer_running_total.",
+    solution:'SELECT transaction_id, customer_id, amount, SUM(amount) OVER (PARTITION BY customer_id ORDER BY transaction_id) AS customer_running_total FROM transactions',
+    expected:(function(){
+      const sorted=[...TABLES.transactions].sort((a,b)=>a.transaction_id-b.transaction_id);
+      const running={};
+      return sorted.map(t=>{
+        running[t.customer_id]=(running[t.customer_id]||0)+t.amount;
+        return {transaction_id:t.transaction_id,customer_id:t.customer_id,amount:t.amount,customer_running_total:running[t.customer_id]};
+      });
+    })(),
+    hint:'SUM(amount) OVER (PARTITION BY customer_id ORDER BY transaction_id) — PARTITION BY resets the running total for each customer.'
   },
   {
     id:'q34', level:4, concept:'lag_lead', type:'consolidate', ordered:false,
