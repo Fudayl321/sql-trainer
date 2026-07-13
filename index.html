@@ -980,6 +980,7 @@
       <input id="login-password" type="password" placeholder="Password" maxlength="100" autocomplete="current-password" />
       <button id="login-submit" disabled>Login</button>
       <div class="auth-error" id="login-error"></div>
+      <button id="login-reset-btn" type="button" style="display:none;width:100%;background:none;border:1px solid var(--warning);color:var(--warning);border-radius:6px;padding:8px 14px;font-size:13px;font-weight:600;cursor:pointer;margin-top:10px;">Reset Password</button>
       <button id="forgot-pw-btn" type="button" style="background:none;border:none;color:var(--text-dim);font-size:12px;cursor:pointer;margin-top:8px;padding:0;text-decoration:underline;width:100%;text-align:center;">Forgot password?</button>
     </div>
     <div id="auth-reset-form" style="display:none">
@@ -5200,17 +5201,21 @@ function showAuthModal() {
   regConfirm.addEventListener('keydown',  e => { if (e.key === 'Enter' && !regSubmit.disabled) regSubmit.click(); });
 
   // Login form
-  const loginUsername = document.getElementById('login-username');
-  const loginPassword = document.getElementById('login-password');
-  const loginSubmit   = document.getElementById('login-submit');
-  const loginError    = document.getElementById('login-error');
+  const loginUsername  = document.getElementById('login-username');
+  const loginPassword  = document.getElementById('login-password');
+  const loginSubmit    = document.getElementById('login-submit');
+  const loginError     = document.getElementById('login-error');
+  const loginResetBtn  = document.getElementById('login-reset-btn');
   function validateLogin() {
     loginSubmit.disabled = !(loginUsername.value.trim().length >= 3 && loginPassword.value.length >= 1);
   }
-  loginUsername.addEventListener('input', validateLogin);
-  loginPassword.addEventListener('input', validateLogin);
+  function hideLoginReset() { loginResetBtn.style.display = 'none'; loginError.textContent = ''; }
+  loginUsername.addEventListener('input', () => { hideLoginReset(); validateLogin(); });
+  loginPassword.addEventListener('input', () => { hideLoginReset(); validateLogin(); });
+  loginResetBtn.addEventListener('click', () => document.getElementById('forgot-pw-btn').click());
   loginSubmit.addEventListener('click', async () => {
     loginError.textContent = '';
+    loginResetBtn.style.display = 'none';
     loginSubmit.disabled = true;
     loginSubmit.textContent = 'Logging in…';
     const username = loginUsername.value.trim();
@@ -5220,6 +5225,7 @@ function showAuthModal() {
     );
     if (error) {
       loginError.textContent = 'Incorrect username or password.';
+      loginResetBtn.style.display = 'block';
       loginSubmit.disabled = false;
       loginSubmit.textContent = 'Login';
     } else {
