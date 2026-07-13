@@ -5357,11 +5357,9 @@ _sb.auth.onAuthStateChange((event) => {
 });
 
 async function initApp() {
-  const { data: { session } } = await _sb.auth.getSession();
-  if (!session) {
-    showAuthModal();
-    return;
-  }
+  // AUTH ARCHIVED — running in guest mode (localStorage only)
+  // const { data: { session } } = await _sb.auth.getSession();
+  // if (!session) { showAuthModal(); return; }
   progress = await loadProgress();
   updateHeader();
   renderProgress();
