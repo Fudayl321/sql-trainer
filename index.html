@@ -3622,20 +3622,21 @@ function buildDiffView(actual, expected, ordered) {
   if (ordered) {
     // Align row-by-row, highlight wrong cells
     const maxLen = Math.max(actual.length, expected.length);
-    const paddedActual   = [...actual,   ...Array(Math.max(0, maxLen - actual.length)).fill(null)];
-    const paddedExpected = [...expected, ...Array(Math.max(0, maxLen - expected.length)).fill(null)];
+    const EMPTY = {};
+    const paddedActual   = [...actual,   ...Array(Math.max(0, maxLen - actual.length)).fill(EMPTY)];
+    const paddedExpected = [...expected, ...Array(Math.max(0, maxLen - expected.length)).fill(EMPTY)];
 
     const yourTable = buildDiffTable(paddedActual, cols, (row, ri) => {
       const expRow = paddedExpected[ri];
-      if (!row)    return { rowClass: 'diff-row-extra',   cellClass: () => '' };
-      if (!expRow) return { rowClass: 'diff-row-extra',   cellClass: () => '' };
+      if (row === EMPTY)    return { rowClass: 'diff-row-extra',   cellClass: () => '' };
+      if (expRow === EMPTY) return { rowClass: 'diff-row-extra',   cellClass: () => '' };
       return {
         rowClass: '',
-        cellClass: c => expRow && String(row[c] ?? null) !== String(expRow[c] ?? null) ? 'diff-cell-wrong' : ''
+        cellClass: c => String(row[c] ?? null) !== String(expRow[c] ?? null) ? 'diff-cell-wrong' : ''
       };
     });
-    const expTable = buildDiffTable(paddedExpected, cols, (row, ri) => {
-      if (!row) return { rowClass: 'diff-row-missing', cellClass: () => '' };
+    const expTable = buildDiffTable(paddedExpected, cols, (row) => {
+      if (row === EMPTY) return { rowClass: 'diff-row-missing', cellClass: () => '' };
       return { rowClass: '', cellClass: () => '' };
     });
 
@@ -5267,16 +5268,13 @@ function showAuthModal() {
     const username = resetUsername.value.trim();
     const { error } = await _sb.auth.resetPasswordForEmail(
       `${username}@sqltrainer.com`,
-      { redirectTo: window.location.href }
+      { redirectTo: window.location.origin + window.location.pathname }
     );
     resetSubmit.textContent = 'Send Reset Link';
-    if (error) {
-      resetError.textContent = error.message || 'Could not send reset email. Try again.';
-      resetSubmit.disabled = false;
-    } else {
-      resetSuccess.textContent = 'Reset link sent! Check your email inbox.';
-      resetSuccess.style.display = 'block';
-    }
+    if (error) console.warn('[SQL Trainer] reset error:', error);
+    resetSuccess.textContent = 'If that account exists, a reset link has been sent.';
+    resetSuccess.style.display = 'block';
+    resetSubmit.disabled = true;
   });
 
   resetUsername.addEventListener('keydown', e => { if (e.key === 'Enter' && !resetSubmit.disabled) resetSubmit.click(); });
@@ -5305,14 +5303,18 @@ function hideSyncPill() {
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 
+let _pwModalBound = false;
 function showSetPasswordModal() {
   const modal = document.getElementById('set-password-modal');
   modal.style.display = 'flex';
 
-  const pwInput  = document.getElementById('newpw-password');
-  const cfInput  = document.getElementById('newpw-confirm');
-  const submit   = document.getElementById('newpw-submit');
-  const errDiv   = document.getElementById('newpw-error');
+  if (_pwModalBound) return;
+  _pwModalBound = true;
+
+  const pwInput    = document.getElementById('newpw-password');
+  const cfInput    = document.getElementById('newpw-confirm');
+  const submit     = document.getElementById('newpw-submit');
+  const errDiv     = document.getElementById('newpw-error');
   const successDiv = document.getElementById('newpw-success');
 
   function validate() {
@@ -5333,7 +5335,6 @@ function showSetPasswordModal() {
     } else {
       successDiv.textContent = 'Password updated! Redirecting to login…';
       successDiv.style.display = 'block';
-      // Clean the recovery hash from the URL then reload to normal login
       history.replaceState(null, '', window.location.pathname);
       setTimeout(() => location.reload(), 2000);
     }
@@ -5343,18 +5344,13 @@ function showSetPasswordModal() {
   setTimeout(() => pwInput.focus(), 50);
 }
 
-async function initApp() {
-  // Detect Supabase password recovery redirect (#type=recovery in URL hash)
-  const hash = window.location.hash;
-  if (hash.includes('type=recovery')) {
-    // Let Supabase process the recovery token from the URL
-    const { data: { session } } = await _sb.auth.getSession();
-    if (session) {
-      showSetPasswordModal();
-      return;
-    }
-  }
+// Listen for Supabase PASSWORD_RECOVERY event — fires when user arrives via reset link.
+// This is async-safe: Supabase parses the hash token before emitting this event.
+_sb.auth.onAuthStateChange((event) => {
+  if (event === 'PASSWORD_RECOVERY') showSetPasswordModal();
+});
 
+async function initApp() {
   const { data: { session } } = await _sb.auth.getSession();
   if (!session) {
     showAuthModal();
