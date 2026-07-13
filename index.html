@@ -877,7 +877,7 @@
       box-sizing: border-box;
     }
     .auth-box input:focus { border-color: var(--accent); box-shadow: var(--glow-cyan); }
-    #reg-submit, #login-submit, #reset-submit {
+    #reg-submit, #login-submit, #reset-submit, #newpw-submit {
       width: 100%;
       background: var(--accent);
       color: #000;
@@ -890,7 +890,7 @@
       transition: opacity 0.2s;
       margin-top: 4px;
     }
-    #reg-submit:disabled, #login-submit:disabled, #reset-submit:disabled { opacity: 0.35; cursor: not-allowed; }
+    #reg-submit:disabled, #login-submit:disabled, #reset-submit:disabled, #newpw-submit:disabled { opacity: 0.35; cursor: not-allowed; }
     .auth-error {
       color: var(--error);
       font-size: 13px;
@@ -990,6 +990,18 @@
       <div id="reset-success" style="display:none;font-size:13px;color:var(--success);text-align:center;margin-top:8px;"></div>
       <button id="back-to-login-btn" type="button" style="background:none;border:none;color:var(--text-dim);font-size:12px;cursor:pointer;margin-top:10px;padding:0;text-decoration:underline;width:100%;text-align:center;">← Back to login</button>
     </div>
+  </div>
+</div>
+
+<div id="set-password-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);display:none;align-items:center;justify-content:center;z-index:1000;">
+  <div class="auth-box">
+    <h2>⚡ SQL Trainer</h2>
+    <p style="font-size:13px;color:var(--text-dim);margin-bottom:18px;text-align:center;">Enter your new password below.</p>
+    <input id="newpw-password" type="password" placeholder="New password (min 6 chars)" maxlength="100" autocomplete="new-password" />
+    <input id="newpw-confirm" type="password" placeholder="Confirm new password" maxlength="100" autocomplete="new-password" />
+    <button id="newpw-submit" disabled>Set New Password</button>
+    <div class="auth-error" id="newpw-error"></div>
+    <div id="newpw-success" style="display:none;font-size:13px;color:var(--success);text-align:center;margin-top:10px;"></div>
   </div>
 </div>
 
@@ -5293,7 +5305,56 @@ function hideSyncPill() {
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
 
+function showSetPasswordModal() {
+  const modal = document.getElementById('set-password-modal');
+  modal.style.display = 'flex';
+
+  const pwInput  = document.getElementById('newpw-password');
+  const cfInput  = document.getElementById('newpw-confirm');
+  const submit   = document.getElementById('newpw-submit');
+  const errDiv   = document.getElementById('newpw-error');
+  const successDiv = document.getElementById('newpw-success');
+
+  function validate() {
+    submit.disabled = !(pwInput.value.length >= 6 && cfInput.value === pwInput.value);
+  }
+  pwInput.addEventListener('input', () => { errDiv.textContent = ''; validate(); });
+  cfInput.addEventListener('input', () => { errDiv.textContent = ''; validate(); });
+
+  submit.addEventListener('click', async () => {
+    errDiv.textContent = '';
+    submit.disabled = true;
+    submit.textContent = 'Saving…';
+    const { error } = await _sb.auth.updateUser({ password: pwInput.value });
+    submit.textContent = 'Set New Password';
+    if (error) {
+      errDiv.textContent = error.message || 'Could not update password. Try again.';
+      validate();
+    } else {
+      successDiv.textContent = 'Password updated! Redirecting to login…';
+      successDiv.style.display = 'block';
+      // Clean the recovery hash from the URL then reload to normal login
+      history.replaceState(null, '', window.location.pathname);
+      setTimeout(() => location.reload(), 2000);
+    }
+  });
+
+  cfInput.addEventListener('keydown', e => { if (e.key === 'Enter' && !submit.disabled) submit.click(); });
+  setTimeout(() => pwInput.focus(), 50);
+}
+
 async function initApp() {
+  // Detect Supabase password recovery redirect (#type=recovery in URL hash)
+  const hash = window.location.hash;
+  if (hash.includes('type=recovery')) {
+    // Let Supabase process the recovery token from the URL
+    const { data: { session } } = await _sb.auth.getSession();
+    if (session) {
+      showSetPasswordModal();
+      return;
+    }
+  }
+
   const { data: { session } } = await _sb.auth.getSession();
   if (!session) {
     showAuthModal();
